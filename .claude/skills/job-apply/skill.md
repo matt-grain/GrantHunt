@@ -109,18 +109,36 @@ Write `applications/<folder>/checklist.md`:
 [Extract top 3 questions from research.md]
 ```
 
-### 6. Report to user
+### 6. Write Killer Cover Letter
+
+**After research is complete, write the cover letter yourself** using:
+- The full `research.md` content
+- The resume at `profile/resume_matthieu_boujonnier.md`
+- The job details
+
+Create a compelling, personalized cover letter that:
+- Opens with a specific company fact that shows research (not generic)
+- Has 3 specific "Why [Company]?" hooks tied to their strategy/products/news
+- References specific company initiatives, contracts, or products by name
+- Connects Matt's experience directly to their challenges
+- Ends with a P.S. containing a specific research-based question
+
+Save to `applications/<folder>/cover_letter.md`
+
+**This is NOT template filling** — write it as a human would, synthesizing all the research.
+
+### 7. Report to user
 
 Show:
 - Folder created: `applications/<folder>/`
 - Files saved:
   - `research.md` (with key highlights)
-  - `cover_letter.md`
+  - `cover_letter.md` (AI-written, research-powered)
   - `checklist.md`
 - Top 3 "Why [Company]?" hooks
 - Next steps
 
-### 7. After applying
+### 8. After applying
 
 ```bash
 uv run jobhunt update <job_id> --status APPLIED --notes "Applied via LinkedIn"
