@@ -1,0 +1,114 @@
+# Job Search Sources Configuration
+# Each source has URL patterns and extraction hints for Chrome automation
+
+sources:
+  linkedin:
+    name: "LinkedIn Jobs"
+    enabled: true
+    priority: 1
+    search_url: "https://www.linkedin.com/jobs/search/?keywords={query}&location={location}"
+    job_card_selector: ".job-card-container"
+    extraction:
+      title: ".job-card-list__title"
+      company: ".job-card-container__company-name"
+      location: ".job-card-container__metadata-item"
+    notes: "Most reliable. Requires login for full results."
+
+  indeed:
+    name: "Indeed Canada"
+    enabled: true
+    priority: 2
+    search_url: "https://ca.indeed.com/jobs?q={query}&l={location}"
+    job_card_selector: ".job_seen_beacon"
+    extraction:
+      title: ".jobTitle"
+      company: ".companyName"
+      location: ".companyLocation"
+    notes: "Good coverage. May show sponsored listings first."
+
+  jobboom:
+    name: "Jobboom"
+    enabled: true
+    priority: 3
+    search_url: "https://www.jobboom.com/recherche?keywords={query}&location={location}"
+    job_card_selector: ".job-card"
+    extraction:
+      title: ".job-title"
+      company: ".company-name"
+      location: ".location"
+    notes: "Quebec-focused. French and English listings."
+
+  technomontreal:
+    name: "TechnoMontreal"
+    enabled: true
+    priority: 4
+    search_url: "https://www.technomontreal.com/en/job-board?search={query}"
+    job_card_selector: ".job-listing"
+    extraction:
+      title: ".job-title"
+      company: ".company"
+      location: ".location"
+    notes: "Montreal tech ecosystem. Smaller but targeted."
+
+  wellfound:
+    name: "Wellfound (AngelList)"
+    enabled: true
+    priority: 5
+    search_url: "https://wellfound.com/role/l/montreal-canada/{query}"
+    job_card_selector: "[data-test='JobSearchResults'] > div"
+    extraction:
+      title: "[data-test='JobTitle']"
+      company: "[data-test='CompanyName']"
+      location: "location text"
+    notes: "Startups and VC-backed companies. Good for CTO roles."
+
+  biotalent:
+    name: "BioTalent Canada"
+    enabled: false  # Enable when searching biotech specifically
+    priority: 6
+    search_url: "https://www.biotalent.ca/job-board/?search={query}&location={location}"
+    job_card_selector: ".job-listing"
+    extraction:
+      title: ".job-title"
+      company: ".company"
+      location: ".location"
+    notes: "BioTech/HealthTech focus. Matches your industry preferences."
+
+  workopolis:
+    name: "Workopolis"
+    enabled: false  # Less tech-focused
+    priority: 7
+    search_url: "https://www.workopolis.com/jobsearch/find-jobs?ak={query}&l={location}"
+    job_card_selector: ".job-card"
+    extraction:
+      title: ".job-title"
+      company: ".company"
+      location: ".location"
+    notes: "General Canada job board."
+
+  glassdoor:
+    name: "Glassdoor"
+    enabled: false  # Aggressive login walls
+    priority: 8
+    search_url: "https://www.glassdoor.ca/Job/montreal-{query}-jobs-SRCH_IL.0,8_IC2872164_KO9,20.htm"
+    job_card_selector: ".react-job-listing"
+    extraction:
+      title: ".job-title"
+      company: ".employer-name"
+      location: ".location"
+    notes: "Good salary data but aggressive login prompts."
+
+# Default search parameters
+defaults:
+  location: "Montreal, Quebec, Canada"
+  remote_locations:
+    - "Remote"
+    - "Canada (Remote)"
+    - "Anywhere"
+
+# Deduplication rules
+deduplication:
+  match_fields:
+    - company
+    - title
+  fuzzy_threshold: 0.85  # Similarity threshold for fuzzy matching
