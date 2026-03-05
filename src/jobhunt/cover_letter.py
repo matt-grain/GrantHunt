@@ -9,6 +9,60 @@ from jobhunt.config import JobProfile, load_profile
 from jobhunt.models import Job
 
 
+def load_research(research_path: Path) -> dict[str, str]:
+    """Load and parse research file for cover letter enhancement.
+
+    Returns dict with:
+    - company_overview: Brief description
+    - why_company: "Why [Company]?" talking points
+    - recent_news: Recent developments
+    - tech_focus: Tech/AI initiatives
+    """
+    if not research_path.exists():
+        return {}
+
+    content = research_path.read_text(encoding="utf-8")
+    result: dict[str, str] = {}
+
+    # Extract company overview (first paragraph after "## Company Overview")
+    overview_match = re.search(
+        r"## Company Overview\s*\n+(.+?)(?=\n##|\n---|\Z)",
+        content,
+        re.DOTALL,
+    )
+    if overview_match:
+        result["company_overview"] = overview_match.group(1).strip()[:500]
+
+    # Extract "Why [Company]?" hooks - flexible matching
+    why_match = re.search(
+        r'(?:###?\s*"?Why .+?"? Hooks?|## Interview Talking Points.+?)\s*\n+(.+?)(?=\n###|\n##|\n---|\Z)',
+        content,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if why_match:
+        result["why_company"] = why_match.group(1).strip()
+
+    # Extract recent news
+    news_match = re.search(
+        r"## Recent (?:News|Strategic|Developments).+?\n+(.+?)(?=\n##|\n---|\Z)",
+        content,
+        re.DOTALL,
+    )
+    if news_match:
+        result["recent_news"] = news_match.group(1).strip()[:400]
+
+    # Extract tech/AI focus
+    tech_match = re.search(
+        r"## Tech & Innovation\s*\n+(.+?)(?=\n##|\n---|\Z)",
+        content,
+        re.DOTALL,
+    )
+    if tech_match:
+        result["tech_focus"] = tech_match.group(1).strip()[:400]
+
+    return result
+
+
 def get_resume_path() -> Path:
     """Get path to resume file."""
     cwd = Path.cwd()
@@ -123,13 +177,28 @@ def match_experience_to_requirements(
     return matches
 
 
-def generate_cover_letter_prompt(job: Job, profile: JobProfile, resume: str) -> str:
+def generate_cover_letter_prompt(
+    job: Job,
+    profile: JobProfile,
+    resume: str,
+    research: dict[str, str] | None = None,
+) -> str:
     """Generate a prompt/draft for cover letter.
 
     This creates a structured draft that can be refined.
+
+    Args:
+        job: Job to apply for
+        profile: User's job profile
+        resume: Resume content
+        research: Optional research dict from load_research()
     """
     requirements = extract_key_requirements(job.raw_description or "")
     matches = match_experience_to_requirements(requirements, resume)
+    research = research or {}
+
+    # Build the "Why Company" section from research
+    why_section = _build_why_section(job.company, research)
 
     # Build the cover letter draft
     letter = f"""# Cover Letter Draft
@@ -151,7 +220,7 @@ I am excited about the opportunity to contribute to your team.
 
 ## Why {job.company}
 
-[Personalize this section based on company research]
+{why_section}
 
 ## Key Qualifications
 
@@ -200,12 +269,69 @@ Best regards,
     return letter
 
 
-def generate_cover_letter(job: Job, output_path: Path | None = None) -> str:
+def _build_why_section(company: str, research: dict[str, str]) -> str:
+    """Build the 'Why Company' section from research data."""
+    if not research:
+        return "[Personalize this section based on company research]"
+
+    parts = []
+
+    # Add company context if available
+    if "company_overview" in research:
+        # Extract first sentence or two
+        overview = research["company_overview"]
+        first_sentences = ". ".join(overview.split(". ")[:2]) + "."
+        parts.append(
+            f"{company}'s position as {first_sentences[:200]} "
+            "aligns well with my experience."
+        )
+
+    # Add specific "Why" hooks from research
+    if "why_company" in research:
+        why_text = research["why_company"]
+        # Extract hook titles - try multiple formats
+        # Format 1: **Hook Title**
+        hooks = re.findall(r"\*\*(.+?)\*\*", why_text)[:3]
+        # Format 2: ### N. Hook Title
+        if not hooks:
+            hooks = re.findall(r"###?\s*\d+\.\s*(.+?)(?:\n|$)", why_text)[:3]
+        # Format 3: N. **Hook Title**
+        if not hooks:
+            hooks = re.findall(r"\d+\.\s*\*\*(.+?)\*\*", why_text)[:3]
+
+        if hooks:
+            parts.append("\nWhat draws me to this opportunity:\n")
+            for hook in hooks:
+                # Clean up the hook title
+                hook = hook.strip().rstrip(":")
+                parts.append(f"- **{hook}**")
+
+    # Add tech/AI angle if available
+    if "tech_focus" in research:
+        tech = research["tech_focus"]
+        if "ai" in tech.lower() or "data" in tech.lower():
+            parts.append(
+                "\nYour investment in AI and data capabilities resonates with my "
+                "recent work leading AI transformation at Grain Ecosystem."
+            )
+
+    if parts:
+        return "\n".join(parts)
+
+    return "[Personalize this section based on company research]"
+
+
+def generate_cover_letter(
+    job: Job,
+    output_path: Path | None = None,
+    research_path: Path | None = None,
+) -> str:
     """Generate a cover letter for a job application.
 
     Args:
         job: The job to apply for (must have raw_description)
         output_path: Optional path to save the letter
+        research_path: Optional path to research.md for personalization
 
     Returns:
         The cover letter content as markdown
@@ -213,7 +339,10 @@ def generate_cover_letter(job: Job, output_path: Path | None = None) -> str:
     profile = load_profile()
     resume = load_resume()
 
-    letter = generate_cover_letter_prompt(job, profile, resume)
+    # Load research if provided
+    research = load_research(research_path) if research_path else None
+
+    letter = generate_cover_letter_prompt(job, profile, resume, research)
 
     if output_path:
         output_path.write_text(letter, encoding="utf-8")

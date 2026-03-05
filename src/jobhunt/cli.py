@@ -392,6 +392,10 @@ def cover_letter_cmd(
         Path | None,
         typer.Option("--output", "-o", help="Save to file instead of displaying"),
     ] = None,
+    research: Annotated[
+        Path | None,
+        typer.Option("--research", "-r", help="Path to research.md for personalization"),
+    ] = None,
 ) -> None:
     """Generate a cover letter for a tracked job."""
     conn = init_db()
@@ -406,8 +410,16 @@ def cover_letter_cmd(
         f"[dim]Generating cover letter for {job.title} at {job.company}...[/dim]"
     )
 
+    # Auto-detect research file if not provided
+    if research is None:
+        # Check applications folder for research.md
+        possible_research = list(Path("applications").glob(f"{job_id}-*/research.md"))
+        if possible_research:
+            research = possible_research[0]
+            console.print(f"[dim]Using research from: {research}[/dim]")
+
     try:
-        letter = generate_cover_letter(job, output)
+        letter = generate_cover_letter(job, output, research)
     except FileNotFoundError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1) from None
