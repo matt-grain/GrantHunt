@@ -1,6 +1,6 @@
 # Job Application Assistant
 
-Help with job application workflow - research, cover letter, and artifact management.
+Comprehensive job application workflow - deep research, personalized cover letter, and artifact management.
 
 ## Usage
 
@@ -16,7 +16,7 @@ Help with job application workflow - research, cover letter, and artifact manage
 uv run jobhunt show <job_id>
 ```
 
-Extract: title, company, date for folder naming.
+Extract: title, company, location, URL, notes for context.
 
 ### 2. Create application folder
 
@@ -31,19 +31,48 @@ Example: `applications/4-cae-2026-03-05/`
 mkdir -p "applications/<id>-<slug>-<date>"
 ```
 
-### 3. Research the company
+### 3. Deep Company Research (Agent)
 
-```bash
-uv run jobhunt research <job_id>
+**Spawn the `company-researcher` agent** to gather interview-ready intelligence:
+
+```
+Use Agent tool with:
+- subagent_type: "company-researcher"
+- prompt: "Research [COMPANY NAME] for a job interview.
+  Role: [JOB TITLE]
+  Location: [LOCATION]
+
+  I need comprehensive intel to answer 'Why are you interested in [COMPANY]?'
+
+  Save the research to: applications/<folder>/research.md"
 ```
 
-Save output to `applications/<folder>/research.md`
+The agent will:
+- Fetch company website (About, Careers, News)
+- Check LinkedIn and recent press
+- Find AI/tech initiatives
+- Compile "Why [Company]?" talking points
+- Generate smart interview questions
 
-### 4. Generate cover letter
+Wait for agent to complete, then verify `research.md` was saved.
+
+### 4. Generate Cover Letter
+
+Now generate a cover letter using BOTH the research AND the resume:
 
 ```bash
-uv run jobhunt cover-letter <job_id> --output "applications/<folder>/cover_letter.md"
+uv run jobhunt cover-letter <job_id> --output "applications/<folder>/cover_letter_draft.md"
 ```
+
+**Then enhance the cover letter** by reading:
+- The generated draft
+- The research.md (for "Why [Company]?" section)
+- The resume at `profile/resume_matthieu_boujonnier.md`
+
+Create an improved `cover_letter.md` that:
+- Fills in the "Why [Company]?" section with specific hooks from research
+- Connects experience to the specific role requirements
+- Uses concrete company facts (not generic praise)
 
 ### 5. Create checklist
 
@@ -57,10 +86,10 @@ Write `applications/<folder>/checklist.md`:
 **Status:** NEW
 
 ## Pre-Application
-- [ ] Review job posting
-- [ ] Company research saved
+- [x] Deep company research completed
+- [x] Cover letter generated
 - [ ] Tailor resume if needed
-- [ ] Personalize cover letter
+- [ ] Review and personalize cover letter
 - [ ] Proofread everything
 
 ## Application
@@ -69,9 +98,15 @@ Write `applications/<folder>/checklist.md`:
 - [ ] Update tracker: `jobhunt update <id> --status APPLIED`
 
 ## Follow-up
-- [ ] Send LinkedIn connection request
+- [ ] Send LinkedIn connection to hiring manager
 - [ ] Set 2-week follow-up reminder
-- [ ] Prepare interview questions
+- [ ] Review interview questions from research.md
+
+## Key Talking Points
+[Extract 3 "Why [Company]?" hooks from research.md]
+
+## Interview Questions to Ask
+[Extract top 3 questions from research.md]
 ```
 
 ### 6. Report to user
@@ -79,9 +114,10 @@ Write `applications/<folder>/checklist.md`:
 Show:
 - Folder created: `applications/<folder>/`
 - Files saved:
-  - `research.md`
+  - `research.md` (with key highlights)
   - `cover_letter.md`
   - `checklist.md`
+- Top 3 "Why [Company]?" hooks
 - Next steps
 
 ### 7. After applying
@@ -95,10 +131,19 @@ uv run jobhunt update <job_id> --status APPLIED --notes "Applied via LinkedIn"
 ```
 applications/
 ├── 4-cae-2026-03-05/
-│   ├── research.md
-│   ├── cover_letter.md
-│   ├── checklist.md
+│   ├── research.md         # Deep company intel from agent
+│   ├── cover_letter.md     # Personalized, research-informed
+│   ├── checklist.md        # Application checklist
 │   └── (resume_tailored.pdf)  # optional, added by user
-├── 5-techcorp-2026-03-06/
+├── 5-stripe-2026-03-06/
 │   └── ...
 ```
+
+## Quality Bar
+
+The cover letter "Why [Company]?" section must contain:
+- At least 2 specific company facts (not generic)
+- Connection to role requirements
+- Reference to recent news/initiatives if available
+
+If the agent research is thin, flag it and suggest manual research before applying.
