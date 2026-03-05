@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Cover Letter - {{ job.title }} - JobHunt{% endblock %}
+
+{% block content %}
+<a href="/jobs/{{ job.id }}" class="text-blue-600 hover:underline mb-4 inline-block">&larr; Back to Job</a>
+
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h1 class="text-2xl font-bold mb-2">Cover Letter</h1>
+    <p class="text-gray-600">{{ job.title }} at {{ job.company }}</p>
+</div>
+
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="prose prose-sm max-w-none text-gray-700">
+        {{ cover_letter | safe }}
+    </div>
+</div>
+{% endblock %}

@@ -73,7 +73,13 @@ async def job_detail(
         return RedirectResponse("/", status_code=302)
 
     research_path = _find_application_file(job_id, "research.md")
-    research = research_path.read_text(encoding="utf-8") if research_path else None
+    research = None
+    if research_path:
+        import markdown
+        research = markdown.markdown(
+            research_path.read_text(encoding="utf-8"),
+            extensions=["tables", "fenced_code", "nl2br"],
+        )
 
     cover_path = _find_application_file(job_id, "cover_letter.md")
     has_cover_letter = cover_path is not None
@@ -86,6 +92,40 @@ async def job_detail(
             "statuses": list(JobStatus),
             "research": research,
             "has_cover_letter": has_cover_letter,
+        },
+    )
+
+
+@router.get("/{job_id}/cover-letter", response_class=HTMLResponse, response_model=None)
+async def cover_letter(
+    request: Request,
+    job_id: int,
+    conn: DBDep,
+) -> HTMLResponse | RedirectResponse:
+    """Render the cover letter page."""
+    import markdown
+
+    templates = get_templates(request)
+    job = get_job(conn, job_id)
+
+    if job is None:
+        return RedirectResponse("/", status_code=302)
+
+    cover_path = _find_application_file(job_id, "cover_letter.md")
+    if cover_path is None:
+        return RedirectResponse(f"/jobs/{job_id}", status_code=302)
+
+    cover_letter_html = markdown.markdown(
+        cover_path.read_text(encoding="utf-8"),
+        extensions=["tables", "fenced_code", "nl2br"],
+    )
+
+    return templates.TemplateResponse(
+        "cover_letter.html",
+        {
+            "request": request,
+            "job": job,
+            "cover_letter": cover_letter_html,
         },
     )
 

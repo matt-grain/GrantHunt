@@ -8,22 +8,28 @@
     <h1 class="text-2xl font-bold">{{ job.title }}</h1>
     <p class="text-gray-600">{{ job.company }} &middot; {{ job.location or "Location not specified" }}</p>
 
-    <div class="mt-4 flex items-center gap-4">
-        <span class="text-sm text-gray-500">Status:</span>
-        <select hx-post="/jobs/{{ job.id }}/status" hx-swap="none"
-                name="status" class="border rounded px-2 py-1">
-            {% for s in statuses %}
-                <option value="{{ s.value }}" {% if s == job.status %}selected{% endif %}>
-                    {{ s.value }}
-                </option>
-            {% endfor %}
-        </select>
+    <div class="mt-4 flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">Status:</span>
+            <select hx-post="/jobs/{{ job.id }}/status" hx-swap="none"
+                    name="status" class="border rounded px-2 py-1">
+                {% for s in statuses %}
+                    <option value="{{ s.value }}" {% if s == job.status %}selected{% endif %}>
+                        {{ s.value }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
         {% if job.score %}
-        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+        <span class="score-badge {% if job.score >= 80 %}score-high{% elif job.score >= 60 %}score-mid{% else %}score-low{% endif %}">
             Score: {{ job.score|int }}/100
         </span>
         {% endif %}
+
+        <span class="text-sm text-gray-500">
+            Added: {{ job.date_added.strftime('%b %d, %Y') }}
+        </span>
     </div>
 </div>
 
@@ -39,6 +45,14 @@
     </a>
     {% endif %}
 </div>
+
+<!-- Job Description -->
+{% if job.raw_description %}
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-3">Job Description</h2>
+    <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">{{ job.raw_description }}</div>
+</div>
+{% endif %}
 
 <!-- Company Research -->
 {% if research %}

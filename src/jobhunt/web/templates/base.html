@@ -42,13 +42,13 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
     <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="max-w-[95vw] mx-auto px-6 py-3 flex justify-between items-center">
             <a href="/" class="text-xl font-bold text-gray-800">JobHunt</a>
-            <div class="flex gap-4 items-center">
-                <a href="/" class="text-gray-600 hover:text-gray-900">Pipeline</a>
-                <a href="/kanban" class="text-gray-600 hover:text-gray-900">Kanban</a>
-                <a href="/prospects" class="text-gray-600 hover:text-gray-900">Prospects</a>
-                <a href="/stats" class="text-gray-600 hover:text-gray-900">Stats</a>
+            <div class="flex gap-6 items-center nav-links">
+                <a href="/prospects" class="nav-link">Prospects</a>
+                <a href="/" class="nav-link">Pipeline</a>
+                <a href="/kanban" class="nav-link">Kanban</a>
+                <a href="/stats" class="nav-link">Stats</a>
             </div>
             <div class="flex items-center gap-3">
                 <button id="theme-toggle" onclick="toggleTheme()" class="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
@@ -65,7 +65,7 @@
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
+    <main class="max-w-[95vw] mx-auto px-6 py-6">
         {% block content %}{% endblock %}
     </main>
 

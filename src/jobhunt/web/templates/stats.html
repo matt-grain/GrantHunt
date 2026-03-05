@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Analytics - JobHunt{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Analytics</h1>
+
+<!-- Summary cards -->
+<div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ total_active }}</p>
+        <p class="text-sm text-gray-500">Active Jobs</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ avg_score }}</p>
+        <p class="text-sm text-gray-500">Avg Score</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ status_counts.get('APPLIED', 0) }}</p>
+        <p class="text-sm text-gray-500">Applied</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ response_rate }}%</p>
+        <p class="text-sm text-gray-500">Response Rate</p>
+    </div>
+</div>
+
+<!-- Pipeline breakdown -->
+<div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-lg font-semibold mb-4">Pipeline Breakdown</h2>
+    {% for status, count in status_counts.items() %}
+    <div class="flex items-center mb-2">
+        <span class="w-28 text-sm text-gray-600">{{ status }}</span>
+        <div class="flex-1 bg-gray-100 rounded-full h-4 mr-4">
+            <div class="bg-blue-500 h-4 rounded-full"
+                 style="width: {{ (count / total_active * 100) if total_active > 0 else 0 }}%"></div>
+        </div>
+        <span class="text-sm text-gray-600 w-8">{{ count }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Score distribution -->
+<div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-lg font-semibold mb-4">Score Distribution</h2>
+    {% for range, count in score_dist.items() %}
+    <div class="flex items-center mb-2">
+        <span class="w-20 text-sm text-gray-600">{{ range }}</span>
+        <div class="flex-1 bg-gray-100 rounded-full h-4 mr-4">
+            <div class="bg-green-500 h-4 rounded-full"
+                 style="width: {{ count * 20 }}%"></div>
+        </div>
+        <span class="text-sm text-gray-600 w-8">{{ count }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Follow-up reminders -->
+{% if stale_jobs %}
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+    <h2 class="text-lg font-semibold text-yellow-800 mb-4">Follow-up Reminders</h2>
+    <ul class="space-y-2">
+        {% for job in stale_jobs %}
+        <li class="flex items-center text-yellow-700">
+            <span class="mr-2">&#9888;</span>
+            <a href="/jobs/{{ job.id }}" class="hover:underline">
+                {{ job.company }} - {{ job.title }}
+            </a>
+            <span class="text-sm ml-2">
+                (applied {{ ((now - job.date_updated).days) }} days ago)
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

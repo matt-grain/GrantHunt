@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .routers import dashboard, jobs
+from .routers import dashboard, jobs, prospects, stats
 
 
 def create_app() -> FastAPI:
@@ -28,5 +28,7 @@ def create_app() -> FastAPI:
 
     app.include_router(dashboard.router)
     app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
+    app.include_router(prospects.router)
+    app.include_router(stats.router)
 
     return app

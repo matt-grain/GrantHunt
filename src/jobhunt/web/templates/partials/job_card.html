@@ -1,5 +1,5 @@
 <div id="job-card-{{ job.id }}"
-     class="bg-white rounded-lg shadow p-4 flex justify-between items-center hover:shadow-md transition-shadow">
+     class="job-card bg-white rounded-lg shadow p-4 flex justify-between items-center hover:shadow-md transition-shadow">
     <div>
         <a href="/jobs/{{ job.id }}" class="font-medium text-gray-900 hover:text-blue-600">
             {{ job.title }}
@@ -9,14 +9,14 @@
 
     <div class="flex items-center gap-3">
         {% if job.score %}
-        <span class="bg-{% if job.score >= 80 %}green{% elif job.score >= 60 %}yellow{% else %}gray{% endif %}-100
-                     text-{% if job.score >= 80 %}green{% elif job.score >= 60 %}yellow{% else %}gray{% endif %}-800
-                     px-2 py-1 rounded text-sm">
+        <span class="score-badge {% if job.score >= 80 %}score-high{% elif job.score >= 60 %}score-mid{% else %}score-low{% endif %}">
             {{ job.score|int }}
         </span>
         {% endif %}
 
-        <select hx-post="/jobs/{{ job.id }}/status" hx-target="#job-card-{{ job.id }}" hx-swap="outerHTML"
+        <select hx-post="/jobs/{{ job.id }}/status"
+                hx-swap="none"
+                hx-on::after-request="window.location.reload()"
                 name="status" class="text-sm border rounded px-2 py-1">
             {% for s in ["NEW", "INTERESTED", "APPLIED", "INTERVIEWING", "OFFER", "REJECTED", "WITHDRAWN"] %}
                 <option value="{{ s }}" {% if s == job.status.value %}selected{% endif %}>{{ s }}</option>

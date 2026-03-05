@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Review Prospects - JobHunt{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">Review Prospects</h1>
+        <p class="text-gray-500">{{ pending_count }} prospects pending review</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-gray-50 border-b">
+            <tr>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Score</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Title</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Company</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Location</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="prospect-list" class="divide-y">
+            {% for prospect in prospects %}
+                {% include "partials/prospect_row.html" %}
+            {% endfor %}
+
+            {% if not prospects %}
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+                    No pending prospects. Run /job-find to discover new opportunities.
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-4 text-sm text-gray-500">
+    <span class="inline-block mr-4">Tracked: {{ tracked_count }}</span>
+    <span class="inline-block">Dismissed: {{ dismissed_count }}</span>
+</div>
+{% endblock %}

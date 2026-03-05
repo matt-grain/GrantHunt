@@ -121,7 +121,7 @@ main {
 }
 
 /* Job cards with left border accent */
-[id^="job-card-"] {
+[id^="job-card-"], .job-card {
   background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
   border-left: 3px solid var(--text-muted) !important;
@@ -129,7 +129,7 @@ main {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[id^="job-card-"]:hover {
+[id^="job-card-"]:hover, .job-card:hover {
   background: var(--bg-hover) !important;
   border-left-color: var(--accent) !important;
 }
@@ -203,7 +203,7 @@ a:hover {
 }
 
 /* Buttons - Secondary */
-.bg-gray-100, button.bg-gray-100 {
+.bg-gray-100:not(.score-badge), button.bg-gray-100 {
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-secondary) !important;
@@ -211,7 +211,7 @@ a:hover {
   font-size: 13px;
 }
 
-.bg-gray-100:hover, .hover\:bg-gray-200:hover {
+.bg-gray-100:hover:not(.score-badge), .hover\:bg-gray-200:hover {
   background: var(--bg-hover) !important;
   border-color: var(--text-muted) !important;
 }
@@ -257,19 +257,39 @@ label, .form-label {
   margin-bottom: 6px;
 }
 
-/* Score badges */
-.bg-green-100, .text-green-800, .text-green-600 {
-  background: var(--success-dim) !important;
-  color: var(--success) !important;
+/* Score badges - unified styling */
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-weight: 600;
-  border: none !important;
+  font-size: 12px;
 }
 
-.bg-yellow-100, .text-yellow-800 {
+.score-badge.score-high,
+.bg-green-100 {
+  background: var(--success-dim) !important;
+  color: var(--success) !important;
+}
+
+.score-badge.score-mid,
+.bg-yellow-100 {
   background: var(--warning-dim) !important;
   color: var(--warning) !important;
-  font-weight: 600;
-  border: none !important;
+}
+
+.score-badge.score-low,
+.bg-gray-100.score-badge {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Status count badges - fix grey on dark */
+.bg-gray-200, .bg-gray-200.text-gray-600 {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
 }
 
 /* Status count cards */
@@ -280,22 +300,84 @@ label, .form-label {
   box-shadow: none !important;
 }
 
-/* Kanban columns */
-.flex-shrink-0.w-72 {
+/* ==================== KANBAN BOARD ==================== */
+
+.kanban-board {
+  min-height: calc(100vh - 200px);
+  align-items: stretch;
+}
+
+.kanban-column {
   background: var(--bg-surface) !important;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border) !important;
   border-radius: 10px !important;
+  transition: all 0.2s ease;
+}
+
+.kanban-cards {
+  flex: 1;
+}
+
+.kanban-column.valid-drop {
+  border-color: var(--success) !important;
+  box-shadow: 0 0 0 2px var(--success-dim);
+}
+
+.kanban-column.invalid-drop {
+  opacity: 0.5;
+}
+
+.kanban-column.drag-over {
+  background: var(--bg-elevated) !important;
+  border-color: var(--accent) !important;
 }
 
 /* Kanban column headers */
-.flex-shrink-0.w-72 h2 {
+.kanban-column h2 {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-tertiary) !important;
 }
 
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.status-dot.status-new { background: var(--text-tertiary); }
+.status-dot.status-interested { background: var(--blue); }
+.status-dot.status-applied { background: var(--accent); }
+.status-dot.status-interviewing { background: var(--warning); }
+.status-dot.status-offer { background: var(--success); }
+
+.status-count {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+}
+
 /* Kanban cards */
+.kanban-card {
+  cursor: grab;
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+}
+
+.kanban-card.dragging {
+  opacity: 0.5;
+  transform: rotate(3deg);
+}
+
+.kanban-card a.block,
 .flex-shrink-0.w-72 a.block {
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border) !important;
@@ -304,10 +386,104 @@ label, .form-label {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.kanban-card a.block:hover,
 .flex-shrink-0.w-72 a.block:hover {
   background: var(--bg-hover) !important;
   border-left-color: var(--accent) !important;
   transform: translateY(-2px);
+}
+
+.empty-column {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+/* ==================== PROSPECT TABLE ==================== */
+
+/* Table styling */
+table {
+  background: var(--bg-surface) !important;
+}
+
+thead {
+  background: var(--bg-elevated) !important;
+}
+
+th {
+  color: var(--text-tertiary) !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.divide-y > * {
+  border-color: var(--border) !important;
+}
+
+/* Prospect rows */
+.prospect-row {
+  transition: background 0.15s ease;
+}
+
+.prospect-row:hover,
+tr.hover\:bg-gray-50:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Prospect action buttons */
+.prospect-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.action-preview {
+  color: var(--text-muted);
+}
+
+.action-preview:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.action-track {
+  color: var(--success);
+}
+
+.action-track:hover {
+  background: var(--success-dim);
+  border-color: var(--success);
+}
+
+.action-dismiss {
+  color: var(--danger);
+}
+
+.action-dismiss:hover {
+  background: var(--danger-dim);
+  border-color: var(--danger);
 }
 
 /* Empty states */
@@ -316,7 +492,8 @@ label, .form-label {
   font-style: italic;
 }
 
-/* Modal styling */
+/* ==================== MODAL ==================== */
+
 #modal > div {
   animation: modalFadeIn 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -355,11 +532,32 @@ button[onclick*="modal"]:hover {
   color: var(--text-primary);
 }
 
+/* ==================== MISC ==================== */
+
 /* HTMX loading indicator */
 .htmx-request {
   opacity: 0.6;
   transition: opacity 200ms;
   pointer-events: none;
+}
+
+/* Navigation links */
+.nav-links {
+  font-family: var(--serif);
+}
+
+.nav-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--accent);
 }
 
 /* Theme toggle button */
@@ -392,10 +590,13 @@ button[onclick*="modal"]:hover {
 /* Prose content (research markdown) */
 .prose, .prose-sm {
   color: var(--text-secondary) !important;
+  line-height: 1.7;
 }
 
 .prose h1, .prose h2, .prose h3, .prose h4 {
   color: var(--text-primary) !important;
+  font-family: var(--serif);
+  letter-spacing: 0.02em;
 }
 
 .prose a {
@@ -414,6 +615,65 @@ button[onclick*="modal"]:hover {
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 14px;
+}
+
+.prose th, .prose td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.prose th {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.prose tr:nth-child(even) {
+  background: var(--bg-hover);
+}
+
+.prose strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.prose em {
+  color: var(--text-tertiary);
+}
+
+.prose ul, .prose ol {
+  margin: 1rem 0 1rem 1.5rem;
+}
+
+.prose li {
+  margin: 0.5rem 0;
+}
+
+.prose p {
+  margin: 1rem 0;
+}
+
+.prose p + p {
+  margin-top: 0.75rem;
+}
+
+.prose h1 { font-size: 1.5rem; margin: 2rem 0 1rem; }
+.prose h2 { font-size: 1.25rem; margin: 1.75rem 0 0.75rem; }
+.prose h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+.prose h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+
+/* Pre-wrap for job descriptions */
+.whitespace-pre-wrap {
+  white-space: pre-wrap !important;
+  word-break: break-word;
 }
 
 /* Status-specific card colors */
@@ -445,8 +705,9 @@ a[href="/"].text-blue-600:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .flex-shrink-0.w-72 {
-    min-width: 260px;
+  .kanban-column {
+    min-width: 260px !important;
+    flex: none !important;
   }
 
   nav .flex.gap-4 {

@@ -4,26 +4,161 @@
 {% block content %}
 <h1 class="text-2xl font-bold mb-6">Kanban Board</h1>
 
-<div class="flex gap-4 overflow-x-auto pb-4">
+<div class="kanban-board flex gap-4 pb-4 w-full">
     {% for status in ["NEW", "INTERESTED", "APPLIED", "INTERVIEWING", "OFFER"] %}
-    <div class="flex-shrink-0 w-72 bg-gray-50 rounded-lg p-4">
-        <h2 class="font-semibold text-gray-700 mb-3">{{ status }}</h2>
+    <div class="kanban-column flex-1 min-w-[250px] bg-gray-50 rounded-lg p-4"
+         data-status="{{ status }}"
+         ondragover="onDragOver(event)"
+         ondrop="onDrop(event)">
+        <h2 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span class="status-dot status-{{ status|lower }}"></span>
+            {{ status }}
+            <span class="status-count">{{ jobs_by_status[status]|length }}</span>
+        </h2>
 
-        <div class="space-y-3 min-h-[200px]" id="kanban-{{ status|lower }}">
-
+        <div class="space-y-3 min-h-[300px] kanban-cards" id="kanban-{{ status|lower }}">
             {% for job in jobs_by_status[status] %}
-            <a href="/jobs/{{ job.id }}" class="block bg-white rounded shadow p-3 hover:shadow-md transition-shadow">
-                <p class="font-medium text-sm">{{ job.title }}</p>
-                <p class="text-xs text-gray-500">{{ job.company }}</p>
-                {% if job.score %}
-                <span class="text-xs text-green-600">{{ job.score|int }}</span>
-                {% endif %}
-            </a>
+            <div class="kanban-card" draggable="true" data-job-id="{{ job.id }}" data-status="{{ status }}"
+                 ondragstart="onDragStart(event)" ondragend="onDragEnd(event)">
+                <a href="/jobs/{{ job.id }}" class="block bg-white rounded shadow p-3 hover:shadow-md transition-shadow">
+                    <p class="font-medium text-sm">{{ job.title }}</p>
+                    <p class="text-xs text-gray-500">{{ job.company }}</p>
+                    {% if job.score %}
+                    <span class="score-badge {% if job.score >= 80 %}score-high{% elif job.score >= 60 %}score-mid{% else %}score-low{% endif %}">
+                        {{ job.score|int }}
+                    </span>
+                    {% endif %}
+                </a>
+            </div>
             {% endfor %}
+
+            {% if not jobs_by_status[status] %}
+            <div class="empty-column">
+                <p>No jobs</p>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
 </div>
 
-<p class="text-gray-400 text-sm mt-4">Click cards to view details and change status</p>
+<p class="text-gray-400 text-sm mt-4">Drag cards between columns to change status</p>
+
+<script>
+// Valid FSM transitions
+const FSM_TRANSITIONS = {
+    'NEW': ['INTERESTED', 'REJECTED', 'WITHDRAWN'],
+    'INTERESTED': ['APPLIED', 'REJECTED', 'WITHDRAWN'],
+    'APPLIED': ['INTERVIEWING', 'REJECTED', 'WITHDRAWN'],
+    'INTERVIEWING': ['OFFER', 'REJECTED', 'WITHDRAWN'],
+    'OFFER': ['REJECTED', 'WITHDRAWN'],
+    'REJECTED': [],
+    'WITHDRAWN': []
+};
+
+let draggedCard = null;
+
+function canTransition(from, to) {
+    // Allow any forward transition in the main flow
+    const mainFlow = ['NEW', 'INTERESTED', 'APPLIED', 'INTERVIEWING', 'OFFER'];
+    const fromIdx = mainFlow.indexOf(from);
+    const toIdx = mainFlow.indexOf(to);
+    if (fromIdx !== -1 && toIdx !== -1 && toIdx > fromIdx) return true;
+    // Also allow explicit FSM transitions
+    return FSM_TRANSITIONS[from]?.includes(to) || false;
+}
+
+function onDragStart(e) {
+    draggedCard = e.target.closest('.kanban-card');
+    if (!draggedCard) return;
+    draggedCard.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', e.target.dataset.jobId);
+
+    // Highlight valid drop targets
+    const currentStatus = e.target.dataset.status;
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        const targetStatus = col.dataset.status;
+        if (canTransition(currentStatus, targetStatus)) {
+            col.classList.add('valid-drop');
+        } else if (targetStatus !== currentStatus) {
+            col.classList.add('invalid-drop');
+        }
+    });
+}
+
+function onDragEnd(e) {
+    if (draggedCard) {
+        draggedCard.classList.remove('dragging');
+    }
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        col.classList.remove('valid-drop', 'invalid-drop', 'drag-over');
+    });
+    draggedCard = null;
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+    const column = e.target.closest('.kanban-column');
+    if (column && draggedCard) {
+        const currentStatus = draggedCard.dataset.status;
+        const targetStatus = column.dataset.status;
+        if (canTransition(currentStatus, targetStatus) || currentStatus === targetStatus) {
+            e.dataTransfer.dropEffect = 'move';
+            column.classList.add('drag-over');
+        } else {
+            e.dataTransfer.dropEffect = 'none';
+        }
+    }
+}
+
+function onDrop(e) {
+    e.preventDefault();
+    const column = e.target.closest('.kanban-column');
+    if (!column || !draggedCard) return;
+
+    const jobId = draggedCard.dataset.jobId;
+    const currentStatus = draggedCard.dataset.status;
+    const newStatus = column.dataset.status;
+
+    column.classList.remove('drag-over');
+
+    if (currentStatus === newStatus) return;
+    if (!canTransition(currentStatus, newStatus)) {
+        alert(`Cannot move from ${currentStatus} to ${newStatus}`);
+        return;
+    }
+
+    // Send status update via HTMX-style fetch
+    const formData = new FormData();
+    formData.append('status', newStatus);
+
+    fetch(`/jobs/${jobId}/status`, {
+        method: 'POST',
+        body: formData
+    }).then(response => {
+        if (response.ok) {
+            // Move card to new column
+            const targetCards = column.querySelector('.kanban-cards');
+            draggedCard.dataset.status = newStatus;
+            targetCards.appendChild(draggedCard);
+
+            // Remove empty state if present
+            const emptyState = targetCards.querySelector('.empty-column');
+            if (emptyState) emptyState.remove();
+
+            // Update counts
+            updateColumnCounts();
+        }
+    });
+}
+
+function updateColumnCounts() {
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        const count = col.querySelectorAll('.kanban-card').length;
+        const countEl = col.querySelector('.status-count');
+        if (countEl) countEl.textContent = count;
+    });
+}
+</script>
 {% endblock %}

@@ -1,0 +1,48 @@
+<tr id="prospect-{{ prospect.id }}" class="prospect-row">
+    <td class="px-4 py-3">
+        <span class="score-badge inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm
+                     {% if prospect.quick_score and prospect.quick_score >= 80 %}score-high
+                     {% elif prospect.quick_score and prospect.quick_score >= 60 %}score-mid
+                     {% else %}score-low{% endif %}">
+            {{ prospect.quick_score|int if prospect.quick_score else "-" }}
+        </span>
+    </td>
+    <td class="px-4 py-3">
+        <a href="{{ prospect.url }}" target="_blank" class="text-blue-600 hover:underline font-medium">
+            {{ prospect.title }}
+        </a>
+        {% if prospect.summary %}
+        <p class="text-xs text-gray-500 truncate max-w-md mt-1">{{ prospect.summary }}</p>
+        {% endif %}
+    </td>
+    <td class="px-4 py-3 text-gray-700">{{ prospect.company }}</td>
+    <td class="px-4 py-3 text-gray-500 text-sm">{{ prospect.location or "-" }}</td>
+    <td class="px-4 py-3">
+        <div class="flex gap-3 prospect-actions">
+            <a href="{{ prospect.url }}" target="_blank"
+               class="action-btn action-preview" title="Preview">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </a>
+            <button hx-post="/prospects/{{ prospect.id }}/track"
+                    hx-target="#prospect-{{ prospect.id }}"
+                    hx-swap="delete"
+                    class="action-btn action-track" title="Track">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </button>
+            <button hx-post="/prospects/{{ prospect.id }}/dismiss"
+                    hx-target="#prospect-{{ prospect.id }}"
+                    hx-swap="delete"
+                    class="action-btn action-dismiss" title="Dismiss">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    </td>
+</tr>

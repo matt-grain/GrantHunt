@@ -13,9 +13,9 @@
 | Phase 3.5: Prospect Staging | ✅ Complete | 5/5 | 100% |
 | Phase 4.1: FastAPI Backend Core | ✅ Complete | 8/8 | 100% |
 | Phase 4.2: Templates & Dashboard | ✅ Complete | 9/9 | 100% |
-| Phase 4.3: Prospect Review + Stats | ⏳ Pending | 0/6 | 0% |
+| Phase 4.3: Prospect Review + Stats | ✅ Complete | 8/8 | 100% |
 
-**Overall:** Phase 4.2 complete, ready for 4.3
+**Overall:** Phase 4 complete! Web dashboard fully functional.
 
 ---
 
@@ -47,30 +47,10 @@
 **Tooling:** ✅ All pass
 
 ### Completed
-- ✅ `pyproject.toml` — Added beautifulsoup4, lxml dependencies
 - ✅ `src/jobhunt/scraper.py` — Job posting scraper with LinkedIn + generic parsers
 - ✅ `src/jobhunt/matcher.py` — Scoring engine (role, keywords, industry, red flags)
 - ✅ `src/jobhunt/cli.py` — Added match command
 - ✅ `.claude/skills/job-match/skill.md` — Match job skill
-
-### Files Created
-- `src/jobhunt/scraper.py` (150 lines) — JobPostingData model, fetch_job_posting(), parsers
-- `src/jobhunt/matcher.py` (180 lines) — MatchResult model, score_job(), scoring functions
-- `.claude/skills/job-match/skill.md`
-
-### Files Modified
-- `pyproject.toml` — Added beautifulsoup4, lxml
-- `src/jobhunt/cli.py` — Added match command with rich output
-
-### Verification Checklist
-| Item | Status |
-|------|--------|
-| All files created | ✅ |
-| Dependencies installed | ✅ |
-| `jobhunt match --help` works | ✅ |
-| Scoring logic implemented | ✅ |
-| Red flag detection | ✅ |
-| `/job-match` skill created | ✅ |
 
 ---
 
@@ -86,31 +66,13 @@
 - ✅ `src/jobhunt/cli.py` — Added research and cover-letter commands
 - ✅ `.claude/skills/job-apply/skill.md` — Application workflow skill
 
-### Files Created
-- `src/jobhunt/research.py` (~80 lines) — CompanyResearch model, research_company(), JSON caching
-- `src/jobhunt/cover_letter.py` (~70 lines) — generate_cover_letter() from resume
-- `.claude/skills/job-apply/skill.md`
-
-### Files Modified
-- `src/jobhunt/cli.py` — Added research and cover-letter commands
-
-### Verification Checklist
-| Item | Status |
-|------|--------|
-| All files created | ✅ |
-| `jobhunt research --help` works | ✅ |
-| `jobhunt cover-letter --help` works | ✅ |
-| Company research caching | ✅ |
-| Resume integration | ✅ |
-| `/job-apply` skill created | ✅ |
-
 ---
 
 ## Phase 4.1 — FastAPI Backend Core
 
 **Implemented:** 2026-03-05
-**Agent:** python-fastapi (Sonnet)
-**Tooling:** ✅ All pass (ruff check, ruff format)
+**Agent:** python-fastapi
+**Tooling:** ✅ All pass
 
 ### Completed
 - ✅ Package structure — `src/jobhunt/web/` module
@@ -120,29 +82,6 @@
 - ✅ Jobs router — `GET /{id}`, `POST /{id}/status`, `GET /add`, `POST /add`
 - ✅ CLI serve command — `jobhunt serve` starts uvicorn
 - ✅ Dependencies added — fastapi, uvicorn, jinja2
-- ✅ Placeholder directories — templates/, static/
-
-### Files Created
-| File | Lines |
-|------|-------|
-| `src/jobhunt/web/__init__.py` | 1 |
-| `src/jobhunt/web/app.py` | 32 |
-| `src/jobhunt/web/dependencies.py` | 28 |
-| `src/jobhunt/web/routers/__init__.py` | 5 |
-| `src/jobhunt/web/routers/dashboard.py` | 67 |
-| `src/jobhunt/web/routers/jobs.py` | 111 |
-
-### Files Modified
-- `src/jobhunt/cli.py` — added `serve` command
-- `pyproject.toml` — added fastapi, uvicorn, jinja2
-
-### Verification Checklist
-| Item | Status |
-|------|--------|
-| All files created | ✅ |
-| All endpoints typed | ✅ |
-| Tooling clean | ✅ |
-| Under 200 lines each | ✅ |
 
 ---
 
@@ -150,53 +89,80 @@
 
 **Implemented:** 2026-03-05
 **Agent:** general-purpose
-**Tooling:** ✅ All pass (ruff check)
+**Tooling:** ✅ All pass
 
 ### Completed
-- ✅ `templates/base.html` — Base layout with HTMX, Tailwind CDN, navigation
-- ✅ `templates/dashboard.html` — Pipeline view with status counts and job cards
-- ✅ `templates/job_detail.html` — Full job detail page with research, notes, actions
-- ✅ `templates/kanban.html` — Kanban board with horizontal scrolling columns
-- ✅ `templates/add_job.html` — Modal form for adding new jobs
-- ✅ `templates/partials/job_card.html` — Single job card with HTMX status dropdown
-- ✅ `templates/partials/status_counts.html` — Status count badges bar
-- ✅ `templates/partials/job_list.html` — Job list partial for HTMX refresh
-- ✅ `static/app.css` — Custom scrollbar, HTMX loading indicator, modal animation
+- ✅ `templates/base.html` — Base layout with HTMX, Tailwind, dark mode toggle
+- ✅ `templates/dashboard.html` — Pipeline view with status counts
+- ✅ `templates/job_detail.html` — Job detail with research, notes
+- ✅ `templates/kanban.html` — Kanban board view
+- ✅ `templates/add_job.html` — Modal form for adding jobs
+- ✅ `templates/partials/job_card.html` — Job card with HTMX status
+- ✅ `templates/partials/status_counts.html` — Status badges
+- ✅ `templates/partials/job_list.html` — Job list partial
+- ✅ `static/app.css` — Claude-inspired dark theme
+
+---
+
+## Phase 4.3 — Prospect Review + Stats
+
+**Implemented:** 2026-03-05
+**Agent:** python-fastapi
+**Tooling:** ✅ All pass (ruff check, ruff format)
+
+### Completed
+- ✅ `routers/prospects.py` — Prospect review endpoints (list, track, dismiss)
+- ✅ `routers/stats.py` — Analytics dashboard endpoint
+- ✅ `templates/prospects.html` — Prospect review table page
+- ✅ `templates/stats.html` — Analytics with KPIs, charts, stale alerts
+- ✅ `templates/partials/prospect_row.html` — Single prospect row with actions
+- ✅ `templates/partials/stats_cards.html` — Reusable stats cards
+- ✅ `routers/__init__.py` — Added prospects, stats imports
+- ✅ `app.py` — Included new routers
 
 ### Files Created
 | File | Lines |
 |------|-------|
-| `src/jobhunt/web/templates/base.html` | 35 |
-| `src/jobhunt/web/templates/dashboard.html` | 31 |
-| `src/jobhunt/web/templates/job_detail.html` | 56 |
-| `src/jobhunt/web/templates/kanban.html` | 32 |
-| `src/jobhunt/web/templates/add_job.html` | 52 |
-| `src/jobhunt/web/templates/partials/job_card.html` | 27 |
-| `src/jobhunt/web/templates/partials/status_counts.html` | 9 |
-| `src/jobhunt/web/templates/partials/job_list.html` | 11 |
-| `src/jobhunt/web/static/app.css` | 24 |
+| `src/jobhunt/web/routers/prospects.py` | ~50 |
+| `src/jobhunt/web/routers/stats.py` | ~75 |
+| `src/jobhunt/web/templates/prospects.html` | ~45 |
+| `src/jobhunt/web/templates/stats.html` | ~65 |
+| `src/jobhunt/web/templates/partials/prospect_row.html` | ~35 |
+| `src/jobhunt/web/templates/partials/stats_cards.html` | ~15 |
+
+### Files Modified
+- `src/jobhunt/web/routers/__init__.py` — Added prospects, stats
+- `src/jobhunt/web/app.py` — Included new routers
 
 ### Verification Checklist
 | Item | Status |
 |------|--------|
-| All 9 files created | ✅ |
-| Jinja2 template syntax correct | ✅ |
-| HTMX attributes present | ✅ |
-| Tailwind classes applied | ✅ |
-| Partials use `{% include %}` | ✅ |
-| Modal closes on backdrop click | ✅ |
+| All 6 files created | ✅ |
+| Both modified files updated | ✅ |
+| ruff check passes | ✅ |
+| Endpoints typed | ✅ |
+| Under 200 lines each | ✅ |
+| ARCHITECTURE.md updated | ✅ |
 
 ---
 
-## Next Phase Preview
+## Web Dashboard Complete
 
-**Phase 4.3: Prospect Review + Stats**
-- 6 tasks (prospect templates, stats page, prospect router)
-- Dependencies: Phase 4.2 ✅
-- Ready to start
+The JobHunt web dashboard is now fully functional:
+
+| Route | Feature |
+|-------|---------|
+| `/` | Pipeline dashboard with status counts |
+| `/kanban` | Kanban board view |
+| `/jobs/{id}` | Job detail with research & notes |
+| `/jobs/add` | Add job modal |
+| `/prospects` | Prospect review with track/dismiss |
+| `/stats` | Analytics with KPIs, charts, stale alerts |
+
+**Run:** `uv run jobhunt serve` → `http://127.0.0.1:9999/`
 
 ---
 
 ## Gaps Requiring Attention
 
-None — Phase 4.2 complete with no gaps.
+None — Phase 4 complete with no gaps.
