@@ -46,7 +46,7 @@ def init_db(path: Path | None = None) -> sqlite3.Connection:
     if path is None:
         path = get_db_path()
 
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
 
     conn.executescript("""

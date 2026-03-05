@@ -12,10 +12,10 @@
 | Phase 3: Application Helpers | ✅ Complete | 4/4 | 100% |
 | Phase 3.5: Prospect Staging | ✅ Complete | 5/5 | 100% |
 | Phase 4.1: FastAPI Backend Core | ✅ Complete | 8/8 | 100% |
-| Phase 4.2: Templates & Dashboard | ⏳ Pending | 0/9 | 0% |
+| Phase 4.2: Templates & Dashboard | ✅ Complete | 9/9 | 100% |
 | Phase 4.3: Prospect Review + Stats | ⏳ Pending | 0/6 | 0% |
 
-**Overall:** Phase 4.1 complete, ready for 4.2
+**Overall:** Phase 4.2 complete, ready for 4.3
 
 ---
 
@@ -146,15 +146,57 @@
 
 ---
 
+## Phase 4.2 — Templates & Dashboard
+
+**Implemented:** 2026-03-05
+**Agent:** general-purpose
+**Tooling:** ✅ All pass (ruff check)
+
+### Completed
+- ✅ `templates/base.html` — Base layout with HTMX, Tailwind CDN, navigation
+- ✅ `templates/dashboard.html` — Pipeline view with status counts and job cards
+- ✅ `templates/job_detail.html` — Full job detail page with research, notes, actions
+- ✅ `templates/kanban.html` — Kanban board with horizontal scrolling columns
+- ✅ `templates/add_job.html` — Modal form for adding new jobs
+- ✅ `templates/partials/job_card.html` — Single job card with HTMX status dropdown
+- ✅ `templates/partials/status_counts.html` — Status count badges bar
+- ✅ `templates/partials/job_list.html` — Job list partial for HTMX refresh
+- ✅ `static/app.css` — Custom scrollbar, HTMX loading indicator, modal animation
+
+### Files Created
+| File | Lines |
+|------|-------|
+| `src/jobhunt/web/templates/base.html` | 35 |
+| `src/jobhunt/web/templates/dashboard.html` | 31 |
+| `src/jobhunt/web/templates/job_detail.html` | 56 |
+| `src/jobhunt/web/templates/kanban.html` | 32 |
+| `src/jobhunt/web/templates/add_job.html` | 52 |
+| `src/jobhunt/web/templates/partials/job_card.html` | 27 |
+| `src/jobhunt/web/templates/partials/status_counts.html` | 9 |
+| `src/jobhunt/web/templates/partials/job_list.html` | 11 |
+| `src/jobhunt/web/static/app.css` | 24 |
+
+### Verification Checklist
+| Item | Status |
+|------|--------|
+| All 9 files created | ✅ |
+| Jinja2 template syntax correct | ✅ |
+| HTMX attributes present | ✅ |
+| Tailwind classes applied | ✅ |
+| Partials use `{% include %}` | ✅ |
+| Modal closes on backdrop click | ✅ |
+
+---
+
 ## Next Phase Preview
 
-**Phase 4.2: Templates & Dashboard**
-- 9 files (HTML templates + CSS)
-- Dependencies: Phase 4.1 ✅
+**Phase 4.3: Prospect Review + Stats**
+- 6 tasks (prospect templates, stats page, prospect router)
+- Dependencies: Phase 4.2 ✅
 - Ready to start
 
 ---
 
 ## Gaps Requiring Attention
 
-None — Phase 4.1 complete with no gaps.
+None — Phase 4.2 complete with no gaps.

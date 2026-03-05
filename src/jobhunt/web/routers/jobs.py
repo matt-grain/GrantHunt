@@ -59,7 +59,7 @@ async def create_job(
     return RedirectResponse("/", status_code=302)
 
 
-@router.get("/{job_id}", response_class=HTMLResponse)
+@router.get("/{job_id}", response_class=HTMLResponse, response_model=None)
 async def job_detail(
     request: Request,
     job_id: int,
@@ -90,7 +90,7 @@ async def job_detail(
     )
 
 
-@router.post("/{job_id}/status", response_class=HTMLResponse)
+@router.post("/{job_id}/status", response_class=HTMLResponse, response_model=None)
 async def update_status(
     request: Request,
     job_id: int,

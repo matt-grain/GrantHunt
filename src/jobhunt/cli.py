@@ -748,7 +748,7 @@ def scrape_history_cmd(
 @app.command()
 def serve(
     host: str = "127.0.0.1",
-    port: int = 8000,
+    port: int = 9999,
     reload: bool = False,
 ) -> None:
     """Start the web dashboard server."""

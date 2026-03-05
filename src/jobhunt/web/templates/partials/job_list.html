@@ -1,0 +1,9 @@
+<div class="space-y-3" id="list-{{ status|lower }}">
+    {% for job in jobs %}
+        {% include "partials/job_card.html" %}
+    {% endfor %}
+
+    {% if not jobs %}
+        <p class="text-gray-400 italic">No jobs in this stage</p>
+    {% endif %}
+</div>
