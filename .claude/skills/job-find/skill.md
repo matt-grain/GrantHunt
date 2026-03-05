@@ -70,6 +70,8 @@ For each job card found, extract:
 - **company**: Company name
 - **location**: Location text
 - **url**: Link to job posting (href)
+- **salary**: Salary range if visible (e.g., "CAD 108,900 - 157,300")
+- **summary**: First 150 chars of description if visible
 
 **LinkedIn example extraction (javascript_tool):**
 ```javascript
@@ -77,6 +79,7 @@ Array.from(document.querySelectorAll('.job-card-container')).map(card => ({
   title: card.querySelector('.job-card-list__title')?.innerText?.trim(),
   company: card.querySelector('.job-card-container__company-name')?.innerText?.trim(),
   location: card.querySelector('.job-card-container__metadata-item')?.innerText?.trim(),
+  salary: card.querySelector('.job-card-container__salary-info')?.innerText?.trim() || null,
   url: card.querySelector('a')?.href
 })).filter(j => j.title && j.company)
 ```
@@ -87,8 +90,21 @@ Array.from(document.querySelectorAll('.job_seen_beacon')).map(card => ({
   title: card.querySelector('.jobTitle')?.innerText?.trim(),
   company: card.querySelector('.companyName')?.innerText?.trim(),
   location: card.querySelector('.companyLocation')?.innerText?.trim(),
+  salary: card.querySelector('.salary-snippet')?.innerText?.trim() || null,
+  summary: card.querySelector('.job-snippet')?.innerText?.trim()?.slice(0, 150) || null,
   url: 'https://ca.indeed.com' + card.querySelector('a')?.getAttribute('href')
 })).filter(j => j.title && j.company)
+```
+
+**BioTalent example (from job detail page):**
+```javascript
+{
+  title: document.querySelector('h1')?.innerText?.trim(),
+  company: document.querySelector('.employer a')?.innerText?.trim(),
+  location: document.querySelector('.location')?.innerText?.trim(),
+  salary: document.querySelector('text:contains("Salary")')?.nextSibling?.textContent?.trim(),
+  summary: document.querySelector('.job-description p')?.innerText?.trim()?.slice(0, 150)
+}
 ```
 
 ### 4. Score Each Job
@@ -153,6 +169,8 @@ for job in unique_jobs:
         title=job["title"],
         company=job["company"],
         location=job["location"],
+        summary=job.get("summary"),      # First 150 chars of description
+        salary=job.get("salary"),        # e.g., "CAD 108,900 - 157,300"
         quick_score=job["score"],
         source=source_name,
     ))

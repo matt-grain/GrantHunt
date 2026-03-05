@@ -72,6 +72,8 @@ def init_db(path: Path | None = None) -> sqlite3.Connection:
             title TEXT NOT NULL,
             company TEXT NOT NULL,
             location TEXT,
+            summary TEXT,
+            salary TEXT,
             quick_score REAL,
             source TEXT DEFAULT 'linkedin',
             external_id TEXT,
@@ -267,15 +269,18 @@ def delete_job(conn: sqlite3.Connection, job_id: int) -> bool:
 
 def _row_to_prospect(row: sqlite3.Row) -> JobProspect:
     """Convert a database row to a JobProspect model."""
+    keys = row.keys()
     return JobProspect(
         id=row["id"],
         url=row["url"],
         title=row["title"],
         company=row["company"],
         location=row["location"],
+        summary=row["summary"] if "summary" in keys else None,
+        salary=row["salary"] if "salary" in keys else None,
         quick_score=row["quick_score"],
         source=row["source"],
-        external_id=row["external_id"] if "external_id" in row.keys() else None,
+        external_id=row["external_id"] if "external_id" in keys else None,
         status=ProspectStatus(row["status"]),
         job_id=row["job_id"],
         discovered_at=datetime.fromisoformat(row["discovered_at"]),
@@ -294,14 +299,16 @@ def add_prospect(conn: sqlite3.Connection, prospect: ProspectCreate) -> JobProsp
     now = datetime.now().isoformat()
     cursor = conn.execute(
         """
-        INSERT INTO job_prospects (url, title, company, location, quick_score, source, external_id, discovered_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO job_prospects (url, title, company, location, summary, salary, quick_score, source, external_id, discovered_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             prospect.url,
             prospect.title,
             prospect.company,
             prospect.location,
+            prospect.summary,
+            prospect.salary,
             prospect.quick_score,
             prospect.source,
             prospect.external_id,

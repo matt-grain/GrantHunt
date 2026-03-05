@@ -12,10 +12,15 @@ Review discovered job prospects and decide which to track or dismiss.
 
 ### 1. List Pending Prospects
 
-Run the CLI command to show pending prospects:
+Query the database directly to get full details:
 
-```bash
-uv run jobhunt prospects --pending
+```python
+from jobhunt.db import init_db, list_prospects
+from jobhunt.models import ProspectStatus
+
+conn = init_db()
+prospects = list_prospects(conn, ProspectStatus.PENDING)
+conn.close()
 ```
 
 If no prospects pending, inform the user:
@@ -26,23 +31,36 @@ Run /job-find to discover new opportunities.
 
 ### 2. Present Options
 
-Display prospects in a table format sorted by score:
+Display prospects with full details including URL, summary, and salary:
 
 ```
 Pending Prospects (9 to review)
 
-ID  Score  Title                              Company         Location
-──────────────────────────────────────────────────────────────────────
-2   88     Chef des solutions intégrées       CAE             Montreal
-3   85     Technical Cloud & AI Strategy      MTY Food Group  Montreal (H)
-4   85     VP Ingénierie et technologie       Hypertec Group  Montreal (H)
+[2] 88 - Chef des solutions intégrées
+    CAE | Montreal, QC
+    Salary: -
+    Summary: Leadership role in integrated solutions...
+    https://linkedin.com/jobs/view/...
+
+[3] 85 - Technical Cloud & AI Strategy Lead
+    MTY Food Group | Montreal, QC (Hybrid)
+    Salary: -
+    Summary: Drive AI strategy and cloud transformation...
+    https://linkedin.com/jobs/view/...
+
+[12] 75 - Senior Scientist – Agentic AI Systems
+    Sanofi | Toronto, ON
+    Salary: CAD 108,900 - 157,300
+    Summary: Join the digital engine driving Sanofi's transformation...
+    https://biotalent.ca/the-petridish/...
+
 ...
 
 Commands:
-- "track 2,3,4" - Move IDs 2,3,4 to your pipeline
-- "dismiss 9,10" - Dismiss IDs 9,10
-- "track all" - Track all pending
-- "dismiss <60" - Dismiss all with score < 60
+- "track 2,3,4" - Move IDs to pipeline
+- "dismiss 9,10" - Not interested
+- "dismiss <60" - Dismiss all below score 60
+- "preview 2" - Open URL in Chrome
 - "done" - Finish review
 ```
 
@@ -57,6 +75,9 @@ uv run jobhunt track <id>
 ```bash
 uv run jobhunt dismiss <id>
 ```
+
+**Preview command:**
+Use Chrome tools to navigate to the job URL for detailed view.
 
 **Bulk operations:**
 For "track all" or "dismiss <score", loop through matching prospects.
@@ -73,9 +94,20 @@ Review complete:
 Run /job-list to see your updated pipeline.
 ```
 
+## Display Format
+
+For each prospect, show:
+- **[ID] Score** - Title
+- Company | Location
+- **Salary:** (if available, else "-")
+- **Summary:** First 100 chars (if available)
+- URL (clickable)
+
+This gives enough context to decide without opening each link.
+
 ## Interactive Mode
 
-Alternatively, run the interactive review:
+Alternatively, run the interactive CLI review:
 ```bash
 uv run jobhunt review
 ```

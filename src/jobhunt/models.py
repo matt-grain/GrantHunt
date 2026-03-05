@@ -54,6 +54,8 @@ class JobProspect(BaseModel):
     title: str
     company: str
     location: str | None = None
+    summary: str | None = None
+    salary: str | None = None
     quick_score: float | None = None
     source: str = "linkedin"
     external_id: str | None = None
@@ -76,6 +78,8 @@ class ProspectCreate(BaseModel):
     title: str
     company: str
     location: str | None = None
+    summary: str | None = None
+    salary: str | None = None
     quick_score: float | None = None
     source: str = "linkedin"
     external_id: str | None = None
