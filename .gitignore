@@ -11,3 +11,6 @@ wheels/
 
 # JobHunt database
 jobs.db
+
+# Research cache
+.jobhunt_cache/

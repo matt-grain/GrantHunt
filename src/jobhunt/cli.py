@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -7,6 +8,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from jobhunt.config import load_profile
+from jobhunt.cover_letter import generate_cover_letter
 from jobhunt.db import (
     add_job,
     delete_job,
@@ -17,6 +19,7 @@ from jobhunt.db import (
 )
 from jobhunt.matcher import score_job
 from jobhunt.models import JobCreate, JobStatus, JobUpdate
+from jobhunt.research import research_company
 from jobhunt.scraper import fetch_job_posting
 
 app = typer.Typer(help="Job search automation CLI")
@@ -333,6 +336,92 @@ def match(
         console.print(
             f"[green]Added to tracker:[/green] {job.title} at {job.company} (ID: {job.id})"
         )
+
+
+@app.command()
+def research(job_id: int) -> None:
+    """Research a company from a tracked job."""
+    conn = init_db()
+    job = get_job(conn, job_id)
+    conn.close()
+
+    if job is None:
+        console.print(f"[red]Job not found:[/red] ID {job_id}")
+        raise typer.Exit(1)
+
+    console.print(f"[dim]Researching {job.company}...[/dim]")
+
+    try:
+        result = asyncio.run(research_company(job.company))
+    except Exception as e:
+        console.print(f"[red]Error researching company:[/red] {e}")
+        raise typer.Exit(1) from None
+
+    # Build output
+    content = f"""[bold]Company:[/bold] {result.name}
+[bold]Website:[/bold] {result.website or 'Not found'}
+[bold]Industry:[/bold] {result.industry or 'Unknown'}
+[bold]Size:[/bold] {result.size or 'Unknown'}
+
+[bold]Description:[/bold]
+{result.description or 'No description available'}"""
+
+    if result.tech_stack:
+        content += "\n\n[bold cyan]Tech Stack:[/bold cyan]"
+        for tech in result.tech_stack:
+            content += f"\n  - {tech}"
+
+    if result.culture_signals:
+        content += "\n\n[bold green]Culture Signals:[/bold green]"
+        for signal in result.culture_signals:
+            content += f"\n  + {signal}"
+
+    if result.interview_prep:
+        content += "\n\n[bold yellow]Interview Questions to Ask:[/bold yellow]"
+        for i, question in enumerate(result.interview_prep, 1):
+            content += f"\n  {i}. {question}"
+
+    panel = Panel(content, title=f"Company Research: {job.company}", expand=False)
+    console.print(panel)
+
+
+@app.command("cover-letter")
+def cover_letter_cmd(
+    job_id: int,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="Save to file instead of displaying"),
+    ] = None,
+) -> None:
+    """Generate a cover letter for a tracked job."""
+    conn = init_db()
+    job = get_job(conn, job_id)
+    conn.close()
+
+    if job is None:
+        console.print(f"[red]Job not found:[/red] ID {job_id}")
+        raise typer.Exit(1)
+
+    console.print(
+        f"[dim]Generating cover letter for {job.title} at {job.company}...[/dim]"
+    )
+
+    try:
+        letter = generate_cover_letter(job, output)
+    except FileNotFoundError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1) from None
+    except Exception as e:
+        console.print(f"[red]Error generating cover letter:[/red] {e}")
+        raise typer.Exit(1) from None
+
+    if output:
+        console.print(f"[green]Cover letter saved to:[/green] {output}")
+    else:
+        console.print()
+        console.print(Panel(letter, title="Cover Letter Draft", expand=False))
+        console.print()
+        console.print("[dim]Tip: Use --output FILE to save to a file[/dim]")
 
 
 if __name__ == "__main__":

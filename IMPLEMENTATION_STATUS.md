@@ -9,9 +9,9 @@
 |-------|--------|-------|------------|
 | Phase 1: Core Infrastructure | ✅ Complete | 11/11 | 100% |
 | Phase 2: Matching & Scoring | ✅ Complete | 5/5 | 100% |
-| Phase 3: Application Helpers | ⏳ Pending | 0/4 | 0% |
+| Phase 3: Application Helpers | ✅ Complete | 4/4 | 100% |
 
-**Overall:** 16/20 tasks complete (80%)
+**Overall:** 20/20 tasks complete (100%)
 
 ---
 
@@ -70,20 +70,47 @@
 
 ---
 
-## Next Phase Preview
+## Phase 3 — Application Helpers
 
-**Phase 3: Application Helpers**
-- 4 tasks
-- Dependencies: Phase 1 ✅, Phase 2 ✅
-- Ready to start
+**Implemented:** 2026-03-05
+**Agent:** general-purpose
+**Tooling:** ✅ All pass
 
-Key deliverables:
-- Company research automation
-- Cover letter generation
-- `/job-apply` workflow skill
+### Completed
+- ✅ `src/jobhunt/research.py` — Company research with JSON caching
+- ✅ `src/jobhunt/cover_letter.py` — Cover letter generation from resume
+- ✅ `src/jobhunt/cli.py` — Added research and cover-letter commands
+- ✅ `.claude/skills/job-apply/skill.md` — Application workflow skill
+
+### Files Created
+- `src/jobhunt/research.py` (~80 lines) — CompanyResearch model, research_company(), JSON caching
+- `src/jobhunt/cover_letter.py` (~70 lines) — generate_cover_letter() from resume
+- `.claude/skills/job-apply/skill.md`
+
+### Files Modified
+- `src/jobhunt/cli.py` — Added research and cover-letter commands
+
+### Verification Checklist
+| Item | Status |
+|------|--------|
+| All files created | ✅ |
+| `jobhunt research --help` works | ✅ |
+| `jobhunt cover-letter --help` works | ✅ |
+| Company research caching | ✅ |
+| Resume integration | ✅ |
+| `/job-apply` skill created | ✅ |
+
+---
+
+## Future Phases
+
+**Phase 4-5: Web UI (Hybrid Approach)**
+- Optional web dashboard for visual pipeline management
+- CLI remains the primary interface
+- Not yet planned in detail
 
 ---
 
 ## Gaps Requiring Attention
 
-None. Phases 1-2 complete and verified.
+None. All MVP phases (1-3) complete and verified.
