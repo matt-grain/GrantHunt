@@ -1,7 +1,7 @@
 # Implementation Status — JobHunt
 
 **Last updated:** 2026-03-05
-**Plan:** IMPLEMENTATION_PLAN.md
+**Plan:** IMPLEMENTATION_PLAN_PHASE_4.md
 
 ## Progress Summary
 
@@ -10,8 +10,12 @@
 | Phase 1: Core Infrastructure | ✅ Complete | 11/11 | 100% |
 | Phase 2: Matching & Scoring | ✅ Complete | 5/5 | 100% |
 | Phase 3: Application Helpers | ✅ Complete | 4/4 | 100% |
+| Phase 3.5: Prospect Staging | ✅ Complete | 5/5 | 100% |
+| Phase 4.1: FastAPI Backend Core | ✅ Complete | 8/8 | 100% |
+| Phase 4.2: Templates & Dashboard | ⏳ Pending | 0/9 | 0% |
+| Phase 4.3: Prospect Review + Stats | ⏳ Pending | 0/6 | 0% |
 
-**Overall:** 20/20 tasks complete (100%)
+**Overall:** Phase 4.1 complete, ready for 4.2
 
 ---
 
@@ -102,15 +106,55 @@
 
 ---
 
-## Future Phases
+## Phase 4.1 — FastAPI Backend Core
 
-**Phase 4-5: Web UI (Hybrid Approach)**
-- Optional web dashboard for visual pipeline management
-- CLI remains the primary interface
-- Not yet planned in detail
+**Implemented:** 2026-03-05
+**Agent:** python-fastapi (Sonnet)
+**Tooling:** ✅ All pass (ruff check, ruff format)
+
+### Completed
+- ✅ Package structure — `src/jobhunt/web/` module
+- ✅ App factory — `app.py` with FastAPI, Jinja2, StaticFiles
+- ✅ Dependencies — `dependencies.py` with `get_db()`, `get_templates()`
+- ✅ Dashboard router — `GET /`, `GET /kanban`
+- ✅ Jobs router — `GET /{id}`, `POST /{id}/status`, `GET /add`, `POST /add`
+- ✅ CLI serve command — `jobhunt serve` starts uvicorn
+- ✅ Dependencies added — fastapi, uvicorn, jinja2
+- ✅ Placeholder directories — templates/, static/
+
+### Files Created
+| File | Lines |
+|------|-------|
+| `src/jobhunt/web/__init__.py` | 1 |
+| `src/jobhunt/web/app.py` | 32 |
+| `src/jobhunt/web/dependencies.py` | 28 |
+| `src/jobhunt/web/routers/__init__.py` | 5 |
+| `src/jobhunt/web/routers/dashboard.py` | 67 |
+| `src/jobhunt/web/routers/jobs.py` | 111 |
+
+### Files Modified
+- `src/jobhunt/cli.py` — added `serve` command
+- `pyproject.toml` — added fastapi, uvicorn, jinja2
+
+### Verification Checklist
+| Item | Status |
+|------|--------|
+| All files created | ✅ |
+| All endpoints typed | ✅ |
+| Tooling clean | ✅ |
+| Under 200 lines each | ✅ |
+
+---
+
+## Next Phase Preview
+
+**Phase 4.2: Templates & Dashboard**
+- 9 files (HTML templates + CSS)
+- Dependencies: Phase 4.1 ✅
+- Ready to start
 
 ---
 
 ## Gaps Requiring Attention
 
-None. All MVP phases (1-3) complete and verified.
+None — Phase 4.1 complete with no gaps.

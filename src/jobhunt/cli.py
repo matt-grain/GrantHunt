@@ -27,7 +27,13 @@ from jobhunt.db import (
     update_job,
 )
 from jobhunt.matcher import score_job
-from jobhunt.models import JobCreate, JobStatus, JobUpdate, ProspectCreate, ProspectStatus
+from jobhunt.models import (
+    JobCreate,
+    JobStatus,
+    JobUpdate,
+    ProspectCreate,
+    ProspectStatus,
+)
 from jobhunt.research import research_company
 from jobhunt.scraper import fetch_job_posting
 
@@ -75,18 +81,24 @@ def add(
     job = add_job(conn, job_data)
     conn.close()
 
-    console.print(f"[green]Added job:[/green] {job.title} at {job.company} (ID: {job.id})")
+    console.print(
+        f"[green]Added job:[/green] {job.title} at {job.company} (ID: {job.id})"
+    )
 
 
 @app.command("list")
 def list_cmd(
     status: Annotated[
         str | None,
-        typer.Option("--status", "-s", help="Filter by status (NEW, INTERESTED, APPLIED, etc.)"),
+        typer.Option(
+            "--status", "-s", help="Filter by status (NEW, INTERESTED, APPLIED, etc.)"
+        ),
     ] = None,
     all_jobs: Annotated[
         bool,
-        typer.Option("--all", "-a", help="Show all jobs including REJECTED and WITHDRAWN"),
+        typer.Option(
+            "--all", "-a", help="Show all jobs including REJECTED and WITHDRAWN"
+        ),
     ] = False,
 ) -> None:
     """List jobs in your pipeline."""
@@ -104,7 +116,8 @@ def list_cmd(
         jobs = list_jobs(conn)
         if not all_jobs:
             jobs = [
-                j for j in jobs
+                j
+                for j in jobs
                 if j.status not in (JobStatus.REJECTED, JobStatus.WITHDRAWN)
             ]
 
@@ -154,15 +167,15 @@ def show(job_id: int) -> None:
 
     content = f"""[bold]Title:[/bold] {job.title}
 [bold]Company:[/bold] {job.company}
-[bold]Location:[/bold] {job.location or 'Not specified'}
+[bold]Location:[/bold] {job.location or "Not specified"}
 [bold]Status:[/bold] [{status_color}]{job.status.value}[/{status_color}]
-[bold]Score:[/bold] {job.score if job.score is not None else 'Not scored'}
+[bold]Score:[/bold] {job.score if job.score is not None else "Not scored"}
 [bold]URL:[/bold] {job.url}
-[bold]Added:[/bold] {job.date_added.strftime('%Y-%m-%d %H:%M')}
-[bold]Updated:[/bold] {job.date_updated.strftime('%Y-%m-%d %H:%M')}
+[bold]Added:[/bold] {job.date_added.strftime("%Y-%m-%d %H:%M")}
+[bold]Updated:[/bold] {job.date_updated.strftime("%Y-%m-%d %H:%M")}
 
 [bold]Notes:[/bold]
-{job.notes or 'No notes'}"""
+{job.notes or "No notes"}"""
 
     panel = Panel(content, title=f"Job #{job.id}", expand=False)
     console.print(panel)
@@ -186,7 +199,9 @@ def update(
 ) -> None:
     """Update a job's status, notes, or score."""
     if status is None and notes is None and score is None:
-        console.print("[yellow]Nothing to update. Use --status, --notes, or --score.[/yellow]")
+        console.print(
+            "[yellow]Nothing to update. Use --status, --notes, or --score.[/yellow]"
+        )
         raise typer.Exit(1)
 
     conn = init_db()
@@ -308,7 +323,7 @@ def match(
 [bold]Company:[/bold] {job_data.company}
 [bold]Location:[/bold] {job_data.location}
 [bold]Remote:[/bold] {remote_str}
-[bold]Salary:[/bold] {job_data.salary or 'Not specified'}
+[bold]Salary:[/bold] {job_data.salary or "Not specified"}
 
 [bold]Overall Score:[/bold] [{score_color}]{result.overall_score}/100[/{score_color}]
 [bold]Recommendation:[/bold] [{score_color}]{result.recommendation}[/{score_color}]
@@ -374,12 +389,12 @@ def research(job_id: int) -> None:
 
     # Build output
     content = f"""[bold]Company:[/bold] {result.name}
-[bold]Website:[/bold] {result.website or 'Not found'}
-[bold]Industry:[/bold] {result.industry or 'Unknown'}
-[bold]Size:[/bold] {result.size or 'Unknown'}
+[bold]Website:[/bold] {result.website or "Not found"}
+[bold]Industry:[/bold] {result.industry or "Unknown"}
+[bold]Size:[/bold] {result.size or "Unknown"}
 
 [bold]Description:[/bold]
-{result.description or 'No description available'}"""
+{result.description or "No description available"}"""
 
     if result.tech_stack:
         content += "\n\n[bold cyan]Tech Stack:[/bold cyan]"
@@ -409,7 +424,9 @@ def cover_letter_cmd(
     ] = None,
     research: Annotated[
         Path | None,
-        typer.Option("--research", "-r", help="Path to research.md for personalization"),
+        typer.Option(
+            "--research", "-r", help="Path to research.md for personalization"
+        ),
     ] = None,
 ) -> None:
     """Generate a cover letter for a tracked job."""
@@ -455,7 +472,9 @@ def cover_letter_cmd(
 def prospects(
     status: Annotated[
         str | None,
-        typer.Option("--status", "-s", help="Filter by status (PENDING, DISMISSED, TRACKED)"),
+        typer.Option(
+            "--status", "-s", help="Filter by status (PENDING, DISMISSED, TRACKED)"
+        ),
     ] = None,
     pending_only: Annotated[
         bool,
@@ -498,7 +517,11 @@ def prospects(
 
     for p in prospects_list:
         score_str = f"{p.quick_score:.0f}" if p.quick_score else "-"
-        score_color = "green" if (p.quick_score or 0) >= 80 else ("yellow" if (p.quick_score or 0) >= 60 else "white")
+        score_color = (
+            "green"
+            if (p.quick_score or 0) >= 80
+            else ("yellow" if (p.quick_score or 0) >= 60 else "white")
+        )
         status_color = PROSPECT_COLORS.get(p.status, "white")
 
         table.add_row(
@@ -511,7 +534,9 @@ def prospects(
         )
 
     console.print(table)
-    console.print("\n[dim]Use 'jobhunt track <ID>' or 'jobhunt dismiss <ID>' to process[/dim]")
+    console.print(
+        "\n[dim]Use 'jobhunt track <ID>' or 'jobhunt dismiss <ID>' to process[/dim]"
+    )
 
 
 @app.command("track")
@@ -528,7 +553,9 @@ def track_cmd(
         raise typer.Exit(1)
 
     if prospect.status == ProspectStatus.TRACKED:
-        console.print(f"[yellow]Already tracked:[/yellow] {prospect.title} at {prospect.company}")
+        console.print(
+            f"[yellow]Already tracked:[/yellow] {prospect.title} at {prospect.company}"
+        )
         conn.close()
         raise typer.Exit(0)
 
@@ -536,7 +563,9 @@ def track_cmd(
     conn.close()
 
     if job:
-        console.print(f"[green]Tracked:[/green] {job.title} at {job.company} (Job ID: {job.id})")
+        console.print(
+            f"[green]Tracked:[/green] {job.title} at {job.company} (Job ID: {job.id})"
+        )
     else:
         console.print("[red]Failed to track prospect[/red]")
         raise typer.Exit(1)
@@ -556,7 +585,9 @@ def dismiss_cmd(
         raise typer.Exit(1)
 
     if prospect.status == ProspectStatus.DISMISSED:
-        console.print(f"[dim]Already dismissed:[/dim] {prospect.title} at {prospect.company}")
+        console.print(
+            f"[dim]Already dismissed:[/dim] {prospect.title} at {prospect.company}"
+        )
         conn.close()
         raise typer.Exit(0)
 
@@ -584,9 +615,15 @@ def review_cmd() -> None:
 
     for p in pending:
         score_str = f"{p.quick_score:.0f}" if p.quick_score else "?"
-        score_color = "green" if (p.quick_score or 0) >= 80 else ("yellow" if (p.quick_score or 0) >= 60 else "white")
+        score_color = (
+            "green"
+            if (p.quick_score or 0) >= 80
+            else ("yellow" if (p.quick_score or 0) >= 60 else "white")
+        )
 
-        console.print(f"[{score_color}][{score_str}][/{score_color}] [bold]{p.title}[/bold]")
+        console.print(
+            f"[{score_color}][{score_str}][/{score_color}] [bold]{p.title}[/bold]"
+        )
         console.print(f"    {p.company} · {p.location or 'Location unknown'}")
         console.print(f"    [dim]{p.url}[/dim]")
 
@@ -608,7 +645,9 @@ def review_cmd() -> None:
                 console.print("  [yellow]Skipped[/yellow]\n")
                 break
             elif action == "q":
-                console.print(f"\n[bold]Summary:[/bold] {tracked} tracked, {dismissed} dismissed")
+                console.print(
+                    f"\n[bold]Summary:[/bold] {tracked} tracked, {dismissed} dismissed"
+                )
                 conn.close()
                 return
             else:
@@ -657,7 +696,9 @@ def add_prospect_cmd(
 def scrape_history_cmd(
     source: Annotated[
         str | None,
-        typer.Option("--source", "-s", help="Filter by source (linkedin, indeed, etc.)"),
+        typer.Option(
+            "--source", "-s", help="Filter by source (linkedin, indeed, etc.)"
+        ),
     ] = None,
     limit: Annotated[
         int,
@@ -702,6 +743,25 @@ def scrape_history_cmd(
                 console.print(f"  {src}: {ago}d ago ({last.new_jobs} new jobs)")
 
     conn.close()
+
+
+@app.command()
+def serve(
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    reload: bool = False,
+) -> None:
+    """Start the web dashboard server."""
+    import uvicorn
+
+    console.print(f"[green]Starting JobHunt dashboard at http://{host}:{port}[/green]")
+    uvicorn.run(
+        "jobhunt.web.app:create_app",
+        host=host,
+        port=port,
+        reload=reload,
+        factory=True,
+    )
 
 
 if __name__ == "__main__":
