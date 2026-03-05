@@ -1,0 +1,138 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(pdf2md)",
+      "mcp__anima__voice",
+      "mcp__anima__eyes",
+      "mcp__anima__curiosity",
+      "Bash(mkdir:*)",
+      "Bash(uv run anima:*)",
+      "Write(~/.anima/**)",
+      "Edit(~/.anima/**)",
+      "WebFetch(domain:markdown.new)",
+      "WebFetch(domain:www.linkedin.com)",
+      "Bash(uv tool:*)",
+      "Bash(pdf2md:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv:*)",
+      "Bash(.venv2/Scripts/python:*)",
+      "Bash(.venv2/Scripts/jobhunt add:*)",
+      "Bash(.venv2/Scripts/jobhunt list:*)",
+      "Bash(.venv2/Scripts/jobhunt stats:*)",
+      "Bash(.venv2/Scripts/jobhunt show:*)",
+      "Bash(.venv2/Scripts/jobhunt update:*)",
+      "Bash(.venv2/Scripts/jobhunt delete:*)",
+      "Bash(rm:*)",
+      "Bash(.venv2/Scripts/pip install:*)",
+      "Bash(export:*)",
+      "Bash(.venv2/Scripts/jobhunt:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.session_start"
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.session_start"
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.session_start"
+          }
+        ]
+      },
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.tools.detect_achievements --since 24"
+          },
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.session_start"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.subagent_start"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.pre_compact"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.session_end"
+          },
+          {
+            "type": "command",
+            "command": "uv run python -m anima.tools.detect_achievements --since 24"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.permission_request"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.permission_request"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python -m anima.hooks.permission_request"
+          }
+        ]
+      }
+    ]
+  }
+}
