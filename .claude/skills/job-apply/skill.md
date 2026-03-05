@@ -1,6 +1,6 @@
 # Job Application Assistant
 
-Help with job application workflow.
+Help with job application workflow - research, cover letter, and artifact management.
 
 ## Usage
 
@@ -10,54 +10,95 @@ Help with job application workflow.
 
 ## Instructions
 
-This skill helps you apply to a tracked job.
+### 1. Get job details
 
-1. **Get job details:**
-   ```bash
-   uv run jobhunt show <job_id>
-   ```
-
-2. **Research the company:**
-   ```bash
-   uv run jobhunt research <job_id>
-   ```
-
-   Review the company research summary.
-
-3. **Generate cover letter:**
-   ```bash
-   uv run jobhunt cover-letter <job_id>
-   ```
-
-   This outputs a draft cover letter. Review and refine as needed.
-
-4. **Update status:**
-   After applying:
-   ```bash
-   uv run jobhunt update <job_id> --status APPLIED --notes "Applied via LinkedIn"
-   ```
-
-## Workflow Checklist
-
-- [ ] Review job posting and score (`jobhunt show <id>`)
-- [ ] Research company (`jobhunt research <id>`)
-- [ ] Tailor resume if needed
-- [ ] Generate cover letter (`jobhunt cover-letter <id>`)
-- [ ] Submit application
-- [ ] Update tracker status (`jobhunt update <id> --status APPLIED`)
-- [ ] Set follow-up reminder (2 weeks)
-
-## Quick Apply
-
-For fast applications:
 ```bash
-# Match and add to tracker
-uv run jobhunt match "<url>" --add
+uv run jobhunt show <job_id>
+```
 
-# Research and prep
-uv run jobhunt research <id>
-uv run jobhunt cover-letter <id> --output cover_letter.md
+Extract: title, company, date for folder naming.
 
-# After applying
-uv run jobhunt update <id> --status APPLIED
+### 2. Create application folder
+
+Create folder structure:
+```
+applications/<id>-<company_slug>-<YYYY-MM-DD>/
+```
+
+Example: `applications/4-cae-2026-03-05/`
+
+```bash
+mkdir -p "applications/<id>-<slug>-<date>"
+```
+
+### 3. Research the company
+
+```bash
+uv run jobhunt research <job_id>
+```
+
+Save output to `applications/<folder>/research.md`
+
+### 4. Generate cover letter
+
+```bash
+uv run jobhunt cover-letter <job_id> --output "applications/<folder>/cover_letter.md"
+```
+
+### 5. Create checklist
+
+Write `applications/<folder>/checklist.md`:
+
+```markdown
+# Application: <Title> at <Company>
+
+**Job URL:** <url>
+**Applied:** [ ] Yes / Date: ___
+**Status:** NEW
+
+## Pre-Application
+- [ ] Review job posting
+- [ ] Company research saved
+- [ ] Tailor resume if needed
+- [ ] Personalize cover letter
+- [ ] Proofread everything
+
+## Application
+- [ ] Submit application
+- [ ] Save confirmation/screenshot
+- [ ] Update tracker: `jobhunt update <id> --status APPLIED`
+
+## Follow-up
+- [ ] Send LinkedIn connection request
+- [ ] Set 2-week follow-up reminder
+- [ ] Prepare interview questions
+```
+
+### 6. Report to user
+
+Show:
+- Folder created: `applications/<folder>/`
+- Files saved:
+  - `research.md`
+  - `cover_letter.md`
+  - `checklist.md`
+- Next steps
+
+### 7. After applying
+
+```bash
+uv run jobhunt update <job_id> --status APPLIED --notes "Applied via LinkedIn"
+```
+
+## Folder Structure
+
+```
+applications/
+├── 4-cae-2026-03-05/
+│   ├── research.md
+│   ├── cover_letter.md
+│   ├── checklist.md
+│   └── (resume_tailored.pdf)  # optional, added by user
+├── 5-techcorp-2026-03-06/
+│   └── ...
 ```
