@@ -64,7 +64,7 @@ sources:
 
   biotalent:
     name: "BioTalent Canada"
-    enabled: false  # Enable when searching biotech specifically
+    enabled: true  # BioTech/HealthTech focus - matches profile preferences
     priority: 6
     search_url: "https://www.biotalent.ca/job-board/?search={query}&location={location}"
     job_card_selector: ".job-listing"
