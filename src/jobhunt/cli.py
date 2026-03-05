@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 
 import typer
@@ -5,6 +6,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from jobhunt.config import load_profile
 from jobhunt.db import (
     add_job,
     delete_job,
@@ -13,7 +15,9 @@ from jobhunt.db import (
     list_jobs,
     update_job,
 )
+from jobhunt.matcher import score_job
 from jobhunt.models import JobCreate, JobStatus, JobUpdate
+from jobhunt.scraper import fetch_job_posting
 
 app = typer.Typer(help="Job search automation CLI")
 console = Console()
@@ -245,6 +249,90 @@ def stats() -> None:
     table.add_row("[bold]Total[/bold]", f"[bold]{len(jobs)}[/bold]")
 
     console.print(table)
+
+
+@app.command()
+def match(
+    url: str,
+    add_to_tracker: Annotated[
+        bool,
+        typer.Option("--add", "-a", help="Add to tracker after matching"),
+    ] = False,
+) -> None:
+    """Analyze a job posting and score it against your profile."""
+    console.print("[dim]Fetching job posting...[/dim]")
+
+    try:
+        job_data = asyncio.run(fetch_job_posting(url))
+    except Exception as e:
+        console.print(f"[red]Error fetching job:[/red] {e}")
+        raise typer.Exit(1) from None
+
+    console.print("[dim]Analyzing match...[/dim]")
+
+    try:
+        profile = load_profile()
+    except FileNotFoundError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1) from None
+
+    result = score_job(job_data, profile)
+
+    if result.overall_score >= 70:
+        score_color = "green"
+    elif result.overall_score >= 50:
+        score_color = "yellow"
+    else:
+        score_color = "red"
+
+    remote_str = job_data.remote if job_data.remote is not None else "Unknown"
+    content = f"""[bold]Title:[/bold] {job_data.title}
+[bold]Company:[/bold] {job_data.company}
+[bold]Location:[/bold] {job_data.location}
+[bold]Remote:[/bold] {remote_str}
+[bold]Salary:[/bold] {job_data.salary or 'Not specified'}
+
+[bold]Overall Score:[/bold] [{score_color}]{result.overall_score}/100[/{score_color}]
+[bold]Recommendation:[/bold] [{score_color}]{result.recommendation}[/{score_color}]
+
+[bold]Breakdown:[/bold]"""
+
+    for category, score in result.breakdown.items():
+        cat_color = "green" if score >= 70 else ("yellow" if score >= 50 else "red")
+        content += f"\n  {category}: [{cat_color}]{score}%[/{cat_color}]"
+
+    if result.highlights:
+        content += "\n\n[bold green]Highlights:[/bold green]"
+        for hl in result.highlights:
+            content += f"\n  [green]+[/green] {hl}"
+
+    if result.red_flags:
+        content += "\n\n[bold red]Red Flags:[/bold red]"
+        for rf in result.red_flags:
+            content += f"\n  [red]![/red] {rf}"
+
+    panel = Panel(content, title="Job Match Analysis", expand=False)
+    console.print(panel)
+
+    should_add = add_to_tracker
+    if not should_add and result.overall_score >= 50:
+        should_add = typer.confirm("\nAdd this job to your tracker?")
+
+    if should_add:
+        conn = init_db()
+        job_create = JobCreate(
+            url=url,
+            title=job_data.title,
+            company=job_data.company,
+            location=job_data.location,
+            notes=f"Score: {result.overall_score}/100 - {result.recommendation}",
+        )
+        job = add_job(conn, job_create)
+        update_job(conn, job.id, JobUpdate(score=result.overall_score))
+        conn.close()
+        console.print(
+            f"[green]Added to tracker:[/green] {job.title} at {job.company} (ID: {job.id})"
+        )
 
 
 if __name__ == "__main__":

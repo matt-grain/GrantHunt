@@ -8,10 +8,10 @@
 | Phase | Status | Tasks | Completion |
 |-------|--------|-------|------------|
 | Phase 1: Core Infrastructure | ✅ Complete | 11/11 | 100% |
-| Phase 2: Matching & Scoring | ⏳ Pending | 0/5 | 0% |
+| Phase 2: Matching & Scoring | ✅ Complete | 5/5 | 100% |
 | Phase 3: Application Helpers | ⏳ Pending | 0/4 | 0% |
 
-**Overall:** 11/20 tasks complete (55%)
+**Overall:** 16/20 tasks complete (80%)
 
 ---
 
@@ -34,49 +34,56 @@
 - ✅ `.claude/skills/job-list/skill.md` — List jobs skill
 - ✅ `ARCHITECTURE.md` — Architecture documentation
 
+---
+
+## Phase 2 — Matching & Scoring
+
+**Implemented:** 2026-03-05
+**Agent:** general-purpose
+**Tooling:** ✅ All pass
+
+### Completed
+- ✅ `pyproject.toml` — Added beautifulsoup4, lxml dependencies
+- ✅ `src/jobhunt/scraper.py` — Job posting scraper with LinkedIn + generic parsers
+- ✅ `src/jobhunt/matcher.py` — Scoring engine (role, keywords, industry, red flags)
+- ✅ `src/jobhunt/cli.py` — Added match command
+- ✅ `.claude/skills/job-match/skill.md` — Match job skill
+
 ### Files Created
-- `job_profile.yaml`
-- `src/jobhunt/__init__.py`
-- `src/jobhunt/models.py`
-- `src/jobhunt/config.py`
-- `src/jobhunt/db.py`
-- `src/jobhunt/cli.py`
-- `.claude/skills/job-add/skill.md`
-- `.claude/skills/job-list/skill.md`
-- `ARCHITECTURE.md`
+- `src/jobhunt/scraper.py` (150 lines) — JobPostingData model, fetch_job_posting(), parsers
+- `src/jobhunt/matcher.py` (180 lines) — MatchResult model, score_job(), scoring functions
+- `.claude/skills/job-match/skill.md`
 
 ### Files Modified
-- `pyproject.toml` — Added dependencies and entry point
-- `.gitignore` — Added jobs.db
+- `pyproject.toml` — Added beautifulsoup4, lxml
+- `src/jobhunt/cli.py` — Added match command with rich output
 
 ### Verification Checklist
 | Item | Status |
 |------|--------|
 | All files created | ✅ |
-| CLI works (`jobhunt --help`) | ✅ |
-| Add command works | ✅ |
-| List command works | ✅ |
-| Update command works | ✅ |
-| Stats command works | ✅ |
-| Skills created | ✅ |
-| ARCHITECTURE.md updated | ✅ |
+| Dependencies installed | ✅ |
+| `jobhunt match --help` works | ✅ |
+| Scoring logic implemented | ✅ |
+| Red flag detection | ✅ |
+| `/job-match` skill created | ✅ |
 
 ---
 
 ## Next Phase Preview
 
-**Phase 2: Matching & Scoring**
-- 5 tasks
-- Dependencies: Phase 1 ✅
+**Phase 3: Application Helpers**
+- 4 tasks
+- Dependencies: Phase 1 ✅, Phase 2 ✅
 - Ready to start
 
 Key deliverables:
-- Job posting scraper
-- Profile matching engine
-- `/job-match` skill
+- Company research automation
+- Cover letter generation
+- `/job-apply` workflow skill
 
 ---
 
 ## Gaps Requiring Attention
 
-None. Phase 1 complete and verified.
+None. Phases 1-2 complete and verified.
