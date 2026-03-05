@@ -11,6 +11,7 @@ from jobhunt.models import (
     ProspectCreate,
     ProspectStatus,
     ProspectUpdate,
+    ScrapeHistory,
 )
 
 
@@ -73,6 +74,7 @@ def init_db(path: Path | None = None) -> sqlite3.Connection:
             location TEXT,
             quick_score REAL,
             source TEXT DEFAULT 'linkedin',
+            external_id TEXT,
             status TEXT DEFAULT 'PENDING',
             job_id INTEGER,
             discovered_at TEXT NOT NULL,
@@ -80,6 +82,17 @@ def init_db(path: Path | None = None) -> sqlite3.Connection:
         );
         CREATE INDEX IF NOT EXISTS idx_prospects_status ON job_prospects(status);
         CREATE INDEX IF NOT EXISTS idx_prospects_score ON job_prospects(quick_score DESC);
+        CREATE INDEX IF NOT EXISTS idx_prospects_external ON job_prospects(source, external_id);
+
+        CREATE TABLE IF NOT EXISTS scrape_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source TEXT NOT NULL,
+            query TEXT,
+            scraped_at TEXT NOT NULL,
+            jobs_found INTEGER DEFAULT 0,
+            new_jobs INTEGER DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_scrape_source ON scrape_history(source, scraped_at DESC);
     """)
     conn.commit()
 
@@ -262,6 +275,7 @@ def _row_to_prospect(row: sqlite3.Row) -> JobProspect:
         location=row["location"],
         quick_score=row["quick_score"],
         source=row["source"],
+        external_id=row["external_id"] if "external_id" in row.keys() else None,
         status=ProspectStatus(row["status"]),
         job_id=row["job_id"],
         discovered_at=datetime.fromisoformat(row["discovered_at"]),
@@ -280,8 +294,8 @@ def add_prospect(conn: sqlite3.Connection, prospect: ProspectCreate) -> JobProsp
     now = datetime.now().isoformat()
     cursor = conn.execute(
         """
-        INSERT INTO job_prospects (url, title, company, location, quick_score, source, discovered_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO job_prospects (url, title, company, location, quick_score, source, external_id, discovered_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             prospect.url,
@@ -290,6 +304,7 @@ def add_prospect(conn: sqlite3.Connection, prospect: ProspectCreate) -> JobProsp
             prospect.location,
             prospect.quick_score,
             prospect.source,
+            prospect.external_id,
             now,
         ),
     )
@@ -409,3 +424,87 @@ def count_prospects_by_status(conn: sqlite3.Connection) -> dict[str, int]:
         "SELECT status, COUNT(*) as count FROM job_prospects GROUP BY status"
     )
     return {row["status"]: row["count"] for row in cursor.fetchall()}
+
+
+def prospect_exists_by_external_id(
+    conn: sqlite3.Connection, source: str, external_id: str
+) -> bool:
+    """Check if a prospect with this external_id already exists for this source."""
+    cursor = conn.execute(
+        "SELECT 1 FROM job_prospects WHERE source = ? AND external_id = ?",
+        (source, external_id),
+    )
+    return cursor.fetchone() is not None
+
+
+def get_known_external_ids(conn: sqlite3.Connection, source: str) -> set[str]:
+    """Get all known external IDs for a source (for batch checking)."""
+    cursor = conn.execute(
+        "SELECT external_id FROM job_prospects WHERE source = ? AND external_id IS NOT NULL",
+        (source,),
+    )
+    return {row["external_id"] for row in cursor.fetchall()}
+
+
+def _row_to_scrape_history(row: sqlite3.Row) -> ScrapeHistory:
+    """Convert a database row to a ScrapeHistory model."""
+    return ScrapeHistory(
+        id=row["id"],
+        source=row["source"],
+        query=row["query"],
+        scraped_at=datetime.fromisoformat(row["scraped_at"]),
+        jobs_found=row["jobs_found"],
+        new_jobs=row["new_jobs"],
+    )
+
+
+def record_scrape(
+    conn: sqlite3.Connection,
+    source: str,
+    query: str | None,
+    jobs_found: int,
+    new_jobs: int,
+) -> ScrapeHistory:
+    """Record a scrape event."""
+    now = datetime.now().isoformat()
+    cursor = conn.execute(
+        """
+        INSERT INTO scrape_history (source, query, scraped_at, jobs_found, new_jobs)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (source, query, now, jobs_found, new_jobs),
+    )
+    conn.commit()
+
+    return _row_to_scrape_history(
+        conn.execute("SELECT * FROM scrape_history WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    )
+
+
+def get_last_scrape(conn: sqlite3.Connection, source: str) -> ScrapeHistory | None:
+    """Get the most recent scrape for a source."""
+    cursor = conn.execute(
+        "SELECT * FROM scrape_history WHERE source = ? ORDER BY scraped_at DESC LIMIT 1",
+        (source,),
+    )
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    return _row_to_scrape_history(row)
+
+
+def list_scrape_history(
+    conn: sqlite3.Connection, source: str | None = None, limit: int = 10
+) -> list[ScrapeHistory]:
+    """List recent scrape history."""
+    if source:
+        cursor = conn.execute(
+            "SELECT * FROM scrape_history WHERE source = ? ORDER BY scraped_at DESC LIMIT ?",
+            (source, limit),
+        )
+    else:
+        cursor = conn.execute(
+            "SELECT * FROM scrape_history ORDER BY scraped_at DESC LIMIT ?",
+            (limit,),
+        )
+    return [_row_to_scrape_history(row) for row in cursor.fetchall()]

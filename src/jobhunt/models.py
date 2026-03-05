@@ -56,9 +56,19 @@ class JobProspect(BaseModel):
     location: str | None = None
     quick_score: float | None = None
     source: str = "linkedin"
+    external_id: str | None = None
     status: ProspectStatus = ProspectStatus.PENDING
     job_id: int | None = None
     discovered_at: datetime
+
+
+class ScrapeHistory(BaseModel):
+    id: int
+    source: str
+    query: str | None = None
+    scraped_at: datetime
+    jobs_found: int = 0
+    new_jobs: int = 0
 
 
 class ProspectCreate(BaseModel):
@@ -68,6 +78,7 @@ class ProspectCreate(BaseModel):
     location: str | None = None
     quick_score: float | None = None
     source: str = "linkedin"
+    external_id: str | None = None
 
 
 class ProspectUpdate(BaseModel):

@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -16,10 +17,12 @@ from jobhunt.db import (
     delete_job,
     dismiss_prospect,
     get_job,
+    get_last_scrape,
     get_prospect,
     init_db,
     list_jobs,
     list_prospects,
+    list_scrape_history,
     track_prospect,
     update_job,
 )
@@ -648,6 +651,57 @@ def add_prospect_cmd(
     console.print(
         f"[green]Added prospect:[/green] {prospect.title} at {prospect.company} (ID: {prospect.id})"
     )
+
+
+@app.command("scrape-history")
+def scrape_history_cmd(
+    source: Annotated[
+        str | None,
+        typer.Option("--source", "-s", help="Filter by source (linkedin, indeed, etc.)"),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", "-n", help="Number of entries to show"),
+    ] = 10,
+) -> None:
+    """Show scrape history for job sources."""
+    conn = init_db()
+    history = list_scrape_history(conn, source, limit)
+
+    if not history:
+        console.print("[dim]No scrape history found.[/dim]")
+        conn.close()
+        return
+
+    table = Table(title="Scrape History")
+    table.add_column("Source", width=15)
+    table.add_column("Query", width=25)
+    table.add_column("Date", width=18)
+    table.add_column("Found", width=6, justify="right")
+    table.add_column("New", width=5, justify="right")
+
+    for h in history:
+        table.add_row(
+            h.source,
+            (h.query or "-")[:25],
+            h.scraped_at.strftime("%Y-%m-%d %H:%M"),
+            str(h.jobs_found),
+            str(h.new_jobs),
+        )
+
+    console.print(table)
+
+    # Show last scrape per source
+    if not source:
+        console.print("\n[bold]Last scrape per source:[/bold]")
+        sources = set(h.source for h in history)
+        for src in sorted(sources):
+            last = get_last_scrape(conn, src)
+            if last:
+                ago = (datetime.now() - last.scraped_at).days
+                console.print(f"  {src}: {ago}d ago ({last.new_jobs} new jobs)")
+
+    conn.close()
 
 
 if __name__ == "__main__":
