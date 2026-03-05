@@ -2,7 +2,16 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from jobhunt.models import Job, JobCreate, JobStatus, JobUpdate
+from jobhunt.models import (
+    Job,
+    JobCreate,
+    JobProspect,
+    JobStatus,
+    JobUpdate,
+    ProspectCreate,
+    ProspectStatus,
+    ProspectUpdate,
+)
 
 
 def get_project_root() -> Path:
@@ -55,6 +64,22 @@ def init_db(path: Path | None = None) -> sqlite3.Connection:
         );
         CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
         CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company);
+
+        CREATE TABLE IF NOT EXISTS job_prospects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            company TEXT NOT NULL,
+            location TEXT,
+            quick_score REAL,
+            source TEXT DEFAULT 'linkedin',
+            status TEXT DEFAULT 'PENDING',
+            job_id INTEGER,
+            discovered_at TEXT NOT NULL,
+            FOREIGN KEY (job_id) REFERENCES jobs(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_prospects_status ON job_prospects(status);
+        CREATE INDEX IF NOT EXISTS idx_prospects_score ON job_prospects(quick_score DESC);
     """)
     conn.commit()
 
@@ -225,3 +250,162 @@ def delete_job(conn: sqlite3.Connection, job_id: int) -> bool:
     cursor = conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
     conn.commit()
     return cursor.rowcount > 0
+
+
+def _row_to_prospect(row: sqlite3.Row) -> JobProspect:
+    """Convert a database row to a JobProspect model."""
+    return JobProspect(
+        id=row["id"],
+        url=row["url"],
+        title=row["title"],
+        company=row["company"],
+        location=row["location"],
+        quick_score=row["quick_score"],
+        source=row["source"],
+        status=ProspectStatus(row["status"]),
+        job_id=row["job_id"],
+        discovered_at=datetime.fromisoformat(row["discovered_at"]),
+    )
+
+
+def add_prospect(conn: sqlite3.Connection, prospect: ProspectCreate) -> JobProspect:
+    """Add a new prospect to the database.
+
+    If the URL already exists, returns the existing prospect instead.
+    """
+    existing = get_prospect_by_url(conn, prospect.url)
+    if existing:
+        return existing
+
+    now = datetime.now().isoformat()
+    cursor = conn.execute(
+        """
+        INSERT INTO job_prospects (url, title, company, location, quick_score, source, discovered_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            prospect.url,
+            prospect.title,
+            prospect.company,
+            prospect.location,
+            prospect.quick_score,
+            prospect.source,
+            now,
+        ),
+    )
+    conn.commit()
+
+    return get_prospect(conn, cursor.lastrowid)  # type: ignore
+
+
+def get_prospect(conn: sqlite3.Connection, prospect_id: int) -> JobProspect | None:
+    """Get a prospect by its ID."""
+    cursor = conn.execute("SELECT * FROM job_prospects WHERE id = ?", (prospect_id,))
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    return _row_to_prospect(row)
+
+
+def get_prospect_by_url(conn: sqlite3.Connection, url: str) -> JobProspect | None:
+    """Get a prospect by its URL."""
+    cursor = conn.execute("SELECT * FROM job_prospects WHERE url = ?", (url,))
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    return _row_to_prospect(row)
+
+
+def list_prospects(
+    conn: sqlite3.Connection, status: ProspectStatus | None = None
+) -> list[JobProspect]:
+    """List all prospects, optionally filtered by status."""
+    if status is not None:
+        cursor = conn.execute(
+            "SELECT * FROM job_prospects WHERE status = ? ORDER BY quick_score DESC",
+            (status.value,),
+        )
+    else:
+        cursor = conn.execute(
+            "SELECT * FROM job_prospects ORDER BY quick_score DESC"
+        )
+
+    return [_row_to_prospect(row) for row in cursor.fetchall()]
+
+
+def update_prospect(
+    conn: sqlite3.Connection, prospect_id: int, update: ProspectUpdate
+) -> JobProspect | None:
+    """Update a prospect's status."""
+    existing = get_prospect(conn, prospect_id)
+    if existing is None:
+        return None
+
+    updates = []
+    values = []
+
+    if update.status is not None:
+        updates.append("status = ?")
+        values.append(update.status.value)
+
+    if update.job_id is not None:
+        updates.append("job_id = ?")
+        values.append(update.job_id)
+
+    if not updates:
+        return existing
+
+    values.append(prospect_id)
+
+    conn.execute(
+        f"UPDATE job_prospects SET {', '.join(updates)} WHERE id = ?",
+        values,
+    )
+    conn.commit()
+
+    return get_prospect(conn, prospect_id)
+
+
+def dismiss_prospect(conn: sqlite3.Connection, prospect_id: int) -> bool:
+    """Mark a prospect as dismissed."""
+    result = update_prospect(
+        conn, prospect_id, ProspectUpdate(status=ProspectStatus.DISMISSED)
+    )
+    return result is not None
+
+
+def track_prospect(conn: sqlite3.Connection, prospect_id: int) -> Job | None:
+    """Move a prospect to the jobs tracker.
+
+    Creates a new job from the prospect and marks the prospect as tracked.
+    """
+    prospect = get_prospect(conn, prospect_id)
+    if prospect is None:
+        return None
+
+    job = add_job(
+        conn,
+        JobCreate(
+            url=prospect.url,
+            title=prospect.title,
+            company=prospect.company,
+            location=prospect.location,
+            notes=f"Quick score: {prospect.quick_score}",
+        ),
+    )
+
+    update_prospect(
+        conn,
+        prospect_id,
+        ProspectUpdate(status=ProspectStatus.TRACKED, job_id=job.id),
+    )
+
+    return job
+
+
+def count_prospects_by_status(conn: sqlite3.Connection) -> dict[str, int]:
+    """Get counts of prospects by status."""
+    cursor = conn.execute(
+        "SELECT status, COUNT(*) as count FROM job_prospects GROUP BY status"
+    )
+    return {row["status"]: row["count"] for row in cursor.fetchall()}

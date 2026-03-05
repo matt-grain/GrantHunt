@@ -1,6 +1,6 @@
 # Job Discovery - Find Matching Opportunities
 
-Discover job opportunities using Chrome browser automation. Searches job boards, extracts listings, scores against your profile, and presents a ranked leaderboard.
+Discover job opportunities using Chrome browser automation. Searches job boards, extracts listings, scores against your profile, and saves to prospects for later review.
 
 ## Prerequisites
 
@@ -76,45 +76,71 @@ For each extracted job, calculate a quick score based on:
 - Remote when remote-friendly: 100%
 - Other: 50%
 
-### 5. Present Leaderboard
+### 5. Save to Prospects Database
+
+**IMPORTANT:** Save ALL discovered jobs to the prospects table for later review.
+
+For each job, run:
+```bash
+uv run jobhunt add-prospect "<url>" \
+  --title "<title>" \
+  --company "<company>" \
+  --location "<location>" \
+  --score <quick_score> \
+  --source linkedin
+```
+
+Or use Python directly:
+```python
+from jobhunt.db import init_db, add_prospect
+from jobhunt.models import ProspectCreate
+
+conn = init_db()
+prospect = add_prospect(conn, ProspectCreate(
+    url=url,
+    title=title,
+    company=company,
+    location=location,
+    quick_score=score,
+    source="linkedin",
+))
+conn.close()
+```
+
+### 6. Present Summary
 
 Display results sorted by score:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  Job Discovery Results - Found 24 opportunities                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  #   Score  Title                        Company          Location      │
-│  ─────────────────────────────────────────────────────────────────────  │
-│  1   92     CTO                          ClimateAI        Montreal      │
-│  2   88     VP Engineering               BioTech Corp     Remote        │
-│  3   85     Head of Data & AI            CAE              Montreal      │
-│  4   81     Principal Architect          HealthTech       Toronto       │
-│  5   76     Technical Lead               StartupXYZ       Montreal      │
-│  ...                                                                    │
-│                                                                         │
-│  [Enter numbers to add, e.g., "1,3,5" or "all" or "none"]              │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+Job Discovery Complete - Found 24 opportunities
+
+Top Matches:
+#   Score  Title                        Company          Location
+----------------------------------------------------------------------
+1   92     CTO                          ClimateAI        Montreal
+2   88     VP Engineering               BioTech Corp     Remote
+3   85     Head of Data & AI            CAE              Montreal
+4   81     Principal Architect          HealthTech       Toronto
+5   76     Technical Lead               StartupXYZ       Montreal
+...
+
+Filtered Out (avoid industries):
+- AI/ML Sector Lead at Morgan Stanley (Finance)
+- Director at Deloitte (IT Consulting)
+
+Saved 24 prospects to review queue.
+Run /job-review to track or dismiss prospects.
 ```
 
-### 6. Add Selected Jobs
+### 7. Next Steps
 
-For each selected job:
-1. Navigate to the job detail page
-2. Extract full description
-3. Run match scoring (detailed)
-4. Add to tracker with `jobhunt add`
-
-Report what was added:
+Inform the user:
 ```
-Added 3 jobs to your pipeline:
-- CTO at ClimateAI (Score: 92)
-- VP Engineering at BioTech Corp (Score: 88)
-- Head of Data & AI at CAE (Score: 85)
-
-Run /job-list to see your updated pipeline.
+Next steps:
+- Run /job-review for interactive triage
+- Run `jobhunt prospects --pending` to see all pending
+- Run `jobhunt track <id>` to move a prospect to pipeline
+- Run `jobhunt dismiss <id>` to remove from review queue
 ```
 
 ## Multi-Site Search (Optional)
@@ -152,3 +178,4 @@ Try broadening your search or check different keywords.
 - Stay logged into LinkedIn before starting
 - For best results, have LinkedIn Jobs notifications enabled (shows fresher posts)
 - Use specific keywords for better matching
+- Prospects are deduplicated by URL - safe to re-run searches

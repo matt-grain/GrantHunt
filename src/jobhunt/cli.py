@@ -11,14 +11,20 @@ from jobhunt.config import load_profile
 from jobhunt.cover_letter import generate_cover_letter
 from jobhunt.db import (
     add_job,
+    add_prospect,
+    count_prospects_by_status,
     delete_job,
+    dismiss_prospect,
     get_job,
+    get_prospect,
     init_db,
     list_jobs,
+    list_prospects,
+    track_prospect,
     update_job,
 )
 from jobhunt.matcher import score_job
-from jobhunt.models import JobCreate, JobStatus, JobUpdate
+from jobhunt.models import JobCreate, JobStatus, JobUpdate, ProspectCreate, ProspectStatus
 from jobhunt.research import research_company
 from jobhunt.scraper import fetch_job_posting
 
@@ -33,6 +39,12 @@ STATUS_COLORS = {
     JobStatus.OFFER: "bright_green",
     JobStatus.REJECTED: "red",
     JobStatus.WITHDRAWN: "dim",
+}
+
+PROSPECT_COLORS = {
+    ProspectStatus.PENDING: "yellow",
+    ProspectStatus.DISMISSED: "dim",
+    ProspectStatus.TRACKED: "green",
 }
 
 
@@ -434,6 +446,208 @@ def cover_letter_cmd(
         console.print(Panel(letter, title="Cover Letter Draft", expand=False))
         console.print()
         console.print("[dim]Tip: Use --output FILE to save to a file[/dim]")
+
+
+@app.command()
+def prospects(
+    status: Annotated[
+        str | None,
+        typer.Option("--status", "-s", help="Filter by status (PENDING, DISMISSED, TRACKED)"),
+    ] = None,
+    pending_only: Annotated[
+        bool,
+        typer.Option("--pending", "-p", help="Show only pending prospects"),
+    ] = False,
+) -> None:
+    """List discovered job prospects awaiting review."""
+    conn = init_db()
+
+    if pending_only:
+        status_filter = ProspectStatus.PENDING
+    elif status:
+        try:
+            status_filter = ProspectStatus(status.upper())
+        except ValueError:
+            console.print(f"[red]Invalid status:[/red] {status}")
+            console.print(f"Valid: {', '.join(s.value for s in ProspectStatus)}")
+            raise typer.Exit(1)
+    else:
+        status_filter = None
+
+    prospects_list = list_prospects(conn, status_filter)
+    counts = count_prospects_by_status(conn)
+    conn.close()
+
+    if not prospects_list:
+        console.print("[dim]No prospects found.[/dim]")
+        return
+
+    pending_count = counts.get("PENDING", 0)
+    console.print(f"\n[bold]Job Prospects[/bold] ({pending_count} pending review)\n")
+
+    table = Table()
+    table.add_column("ID", style="dim", width=4)
+    table.add_column("Score", width=6, justify="right")
+    table.add_column("Title", width=30)
+    table.add_column("Company", width=20)
+    table.add_column("Location", width=15)
+    table.add_column("Status", width=10)
+
+    for p in prospects_list:
+        score_str = f"{p.quick_score:.0f}" if p.quick_score else "-"
+        score_color = "green" if (p.quick_score or 0) >= 80 else ("yellow" if (p.quick_score or 0) >= 60 else "white")
+        status_color = PROSPECT_COLORS.get(p.status, "white")
+
+        table.add_row(
+            str(p.id),
+            f"[{score_color}]{score_str}[/{score_color}]",
+            p.title[:30],
+            p.company[:20],
+            (p.location or "-")[:15],
+            f"[{status_color}]{p.status.value}[/{status_color}]",
+        )
+
+    console.print(table)
+    console.print("\n[dim]Use 'jobhunt track <ID>' or 'jobhunt dismiss <ID>' to process[/dim]")
+
+
+@app.command("track")
+def track_cmd(
+    prospect_id: int,
+) -> None:
+    """Move a prospect to your job tracker."""
+    conn = init_db()
+    prospect = get_prospect(conn, prospect_id)
+
+    if prospect is None:
+        console.print(f"[red]Prospect not found:[/red] ID {prospect_id}")
+        conn.close()
+        raise typer.Exit(1)
+
+    if prospect.status == ProspectStatus.TRACKED:
+        console.print(f"[yellow]Already tracked:[/yellow] {prospect.title} at {prospect.company}")
+        conn.close()
+        raise typer.Exit(0)
+
+    job = track_prospect(conn, prospect_id)
+    conn.close()
+
+    if job:
+        console.print(f"[green]Tracked:[/green] {job.title} at {job.company} (Job ID: {job.id})")
+    else:
+        console.print("[red]Failed to track prospect[/red]")
+        raise typer.Exit(1)
+
+
+@app.command("dismiss")
+def dismiss_cmd(
+    prospect_id: int,
+) -> None:
+    """Dismiss a prospect (not interested)."""
+    conn = init_db()
+    prospect = get_prospect(conn, prospect_id)
+
+    if prospect is None:
+        console.print(f"[red]Prospect not found:[/red] ID {prospect_id}")
+        conn.close()
+        raise typer.Exit(1)
+
+    if prospect.status == ProspectStatus.DISMISSED:
+        console.print(f"[dim]Already dismissed:[/dim] {prospect.title} at {prospect.company}")
+        conn.close()
+        raise typer.Exit(0)
+
+    dismiss_prospect(conn, prospect_id)
+    conn.close()
+    console.print(f"[dim]Dismissed:[/dim] {prospect.title} at {prospect.company}")
+
+
+@app.command("review")
+def review_cmd() -> None:
+    """Interactive review of pending prospects."""
+    conn = init_db()
+    pending = list_prospects(conn, ProspectStatus.PENDING)
+
+    if not pending:
+        console.print("[dim]No pending prospects to review.[/dim]")
+        conn.close()
+        return
+
+    console.print(f"\n[bold]Review {len(pending)} Prospects[/bold]")
+    console.print("[dim]Commands: t=track, d=dismiss, s=skip, q=quit[/dim]\n")
+
+    tracked = 0
+    dismissed = 0
+
+    for p in pending:
+        score_str = f"{p.quick_score:.0f}" if p.quick_score else "?"
+        score_color = "green" if (p.quick_score or 0) >= 80 else ("yellow" if (p.quick_score or 0) >= 60 else "white")
+
+        console.print(f"[{score_color}][{score_str}][/{score_color}] [bold]{p.title}[/bold]")
+        console.print(f"    {p.company} · {p.location or 'Location unknown'}")
+        console.print(f"    [dim]{p.url}[/dim]")
+
+        while True:
+            action = typer.prompt("Action", default="s").lower().strip()
+
+            if action == "t":
+                job = track_prospect(conn, p.id)
+                if job:
+                    console.print(f"  [green]Tracked (Job #{job.id})[/green]\n")
+                    tracked += 1
+                break
+            elif action == "d":
+                dismiss_prospect(conn, p.id)
+                console.print("  [dim]Dismissed[/dim]\n")
+                dismissed += 1
+                break
+            elif action == "s":
+                console.print("  [yellow]Skipped[/yellow]\n")
+                break
+            elif action == "q":
+                console.print(f"\n[bold]Summary:[/bold] {tracked} tracked, {dismissed} dismissed")
+                conn.close()
+                return
+            else:
+                console.print("  [red]Unknown action. Use t/d/s/q[/red]")
+
+    conn.close()
+    console.print(f"\n[bold]Done![/bold] {tracked} tracked, {dismissed} dismissed")
+
+
+@app.command("add-prospect")
+def add_prospect_cmd(
+    url: str,
+    title: Annotated[str, typer.Option("--title", "-t", help="Job title")],
+    company: Annotated[str, typer.Option("--company", "-c", help="Company name")],
+    location: Annotated[
+        str | None, typer.Option("--location", "-l", help="Job location")
+    ] = None,
+    score: Annotated[
+        float | None, typer.Option("--score", "-s", help="Quick score (0-100)")
+    ] = None,
+    source: Annotated[
+        str, typer.Option("--source", help="Source (linkedin, indeed, etc.)")
+    ] = "linkedin",
+) -> None:
+    """Add a job prospect manually."""
+    conn = init_db()
+    prospect = add_prospect(
+        conn,
+        ProspectCreate(
+            url=url,
+            title=title,
+            company=company,
+            location=location,
+            quick_score=score,
+            source=source,
+        ),
+    )
+    conn.close()
+
+    console.print(
+        f"[green]Added prospect:[/green] {prospect.title} at {prospect.company} (ID: {prospect.id})"
+    )
 
 
 if __name__ == "__main__":

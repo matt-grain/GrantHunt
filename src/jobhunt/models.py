@@ -14,6 +14,12 @@ class JobStatus(StrEnum):
     WITHDRAWN = "WITHDRAWN"
 
 
+class ProspectStatus(StrEnum):
+    PENDING = "PENDING"
+    DISMISSED = "DISMISSED"
+    TRACKED = "TRACKED"
+
+
 class Job(BaseModel):
     id: int
     url: str
@@ -40,3 +46,30 @@ class JobUpdate(BaseModel):
     status: JobStatus | None = None
     score: float | None = None
     notes: str | None = None
+
+
+class JobProspect(BaseModel):
+    id: int
+    url: str
+    title: str
+    company: str
+    location: str | None = None
+    quick_score: float | None = None
+    source: str = "linkedin"
+    status: ProspectStatus = ProspectStatus.PENDING
+    job_id: int | None = None
+    discovered_at: datetime
+
+
+class ProspectCreate(BaseModel):
+    url: str
+    title: str
+    company: str
+    location: str | None = None
+    quick_score: float | None = None
+    source: str = "linkedin"
+
+
+class ProspectUpdate(BaseModel):
+    status: ProspectStatus | None = None
+    job_id: int | None = None
