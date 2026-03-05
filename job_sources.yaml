@@ -66,13 +66,22 @@ sources:
     name: "BioTalent Canada"
     enabled: true  # BioTech/HealthTech focus - matches profile preferences
     priority: 6
-    search_url: "https://www.biotalent.ca/job-board/?search={query}&location={location}"
+    search_url: "https://www.biotalent.ca/the-petridish/?job_search={query}"
     job_card_selector: ".job-listing"
     extraction:
       title: ".job-title"
       company: ".company"
       location: ".location"
-    notes: "BioTech/HealthTech focus. Matches your industry preferences."
+    notes: "BioTech/HealthTech focus. Mostly scientific/technical roles."
+    # Short words like "AI" get filtered - use longer terms
+    recommended_queries:
+      - "data scientist"
+      - "machine learning"
+      - "artificial intelligence"
+      - "bioinformatics"
+      - "computational"
+      - "director"
+      - "head of"
 
   workopolis:
     name: "Workopolis"
