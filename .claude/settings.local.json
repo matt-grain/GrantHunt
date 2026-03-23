@@ -25,114 +25,27 @@
       "Bash(rm:*)",
       "Bash(.venv2/Scripts/pip install:*)",
       "Bash(export:*)",
-      "Bash(.venv2/Scripts/jobhunt:*)"
+      "Bash(.venv2/Scripts/jobhunt:*)",
+      "WebFetch(domain:www.cae.com)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebSearch",
+      "Bash(uv run:*)",
+      "Bash(git add:*)",
+      "mcp__anima__memory",
+      "mcp__anima__dream",
+      "Bash(mv applications/5-vooban-2026-03-16 applications/9-vooban-2026-03-16)",
+      "Bash(mv applications/6-redfish-aglending-2026-03-16 applications/10-redfish-aglending-2026-03-16)",
+      "mcp__anima__body",
+      "Bash(cp:*)",
+      "Bash(for id:*)",
+      "Bash(do)",
+      "Bash(done)",
+      "Bash(rm -rf C:/Projects/GrantHunt)",
+      "Bash(mkdir -p C:/Projects/GrantHunt)",
+      "Bash(rsync -a --exclude='.venv' --exclude='jobs/' --exclude='docs/' --exclude='study/' --exclude='jobhunt.db' --exclude='*.db' --exclude='.claude/agent-memory' --exclude='__pycache__' --exclude='*.pyc' --exclude='.worktrees' . C:/Projects/GrantHunt/)",
+      "Bash(while read:*)",
+      "Bash(do cp:*)"
     ]
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.session_start"
-          }
-        ]
-      },
-      {
-        "matcher": "resume",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.session_start"
-          }
-        ]
-      },
-      {
-        "matcher": "compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.session_start"
-          }
-        ]
-      },
-      {
-        "matcher": "clear",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.tools.detect_achievements --since 24"
-          },
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.session_start"
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.subagent_start"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.pre_compact"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.session_end"
-          },
-          {
-            "type": "command",
-            "command": "uv run python -m anima.tools.detect_achievements --since 24"
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.permission_request"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.permission_request"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run python -m anima.hooks.permission_request"
-          }
-        ]
-      }
-    ]
-  }
+  "hooks": {}
 }

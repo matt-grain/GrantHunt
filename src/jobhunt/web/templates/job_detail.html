@@ -34,7 +34,7 @@
 </div>
 
 <!-- Actions -->
-<div class="bg-white rounded-lg shadow p-4 mb-6 flex gap-4">
+<div class="bg-white rounded-lg shadow p-4 mb-6 flex gap-4 items-center">
     <a href="{{ job.url }}" target="_blank"
        class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded">
         View Posting
@@ -44,6 +44,12 @@
         Cover Letter
     </a>
     {% endif %}
+    <form method="post" action="/jobs/{{ job.id }}/delete" class="ml-auto"
+          onsubmit="return confirm('Delete this job from the pipeline?')">
+        <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded text-sm">
+            Delete
+        </button>
+    </form>
 </div>
 
 <!-- Job Description -->
@@ -67,6 +73,13 @@
 <!-- Notes -->
 <div class="bg-white rounded-lg shadow p-6 mb-6">
     <h2 class="text-lg font-semibold mb-3">Notes</h2>
-    <p class="text-gray-700">{{ job.notes or "No notes yet" }}</p>
+    <div class="text-gray-700 whitespace-pre-wrap mb-4">{{ job.notes or "No notes yet" }}</div>
+    <form method="post" action="/jobs/{{ job.id }}/notes" class="flex gap-2">
+        <input type="text" name="note" placeholder="Add a note..."
+               class="flex-1 border rounded px-3 py-2 text-sm" required>
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+            Add
+        </button>
+    </form>
 </div>
 {% endblock %}

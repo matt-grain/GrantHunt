@@ -16,6 +16,7 @@
         {% endif %}
     </td>
     <td class="px-4 py-3 text-gray-700">{{ prospect.company }}</td>
+    <td class="px-4 py-3 text-gray-500 text-sm">{{ prospect.discovered_at.strftime('%Y-%m-%d') }}</td>
     <td class="px-4 py-3 text-gray-500 text-sm">{{ prospect.location or "-" }}</td>
     <td class="px-4 py-3">
         <div class="flex gap-3 prospect-actions">

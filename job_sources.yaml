@@ -40,7 +40,7 @@ sources:
 
   technomontreal:
     name: "TechnoMontreal"
-    enabled: true
+    enabled: false  # URL returns 404 as of March 2026
     priority: 4
     search_url: "https://www.technomontreal.com/en/job-board?search={query}"
     job_card_selector: ".job-listing"
@@ -49,6 +49,42 @@ sources:
       company: ".company"
       location: ".location"
     notes: "Montreal tech ecosystem. Smaller but targeted."
+
+  talentmontreal:
+    name: "Talent Montreal"
+    enabled: true
+    priority: 4
+    search_url: "https://talentmontreal.com/en/jobs?q={query}"
+    job_card_selector: ".job-card, .job-listing, article"
+    extraction:
+      title: "h2, .job-title"
+      company: ".company, .employer"
+      location: ".location"
+    notes: "Montreal tech talent platform. Successor to TechnoMontreal."
+
+  district3:
+    name: "District3 (Concordia)"
+    enabled: true
+    priority: 5
+    search_url: "https://www.district3.co/jobs"
+    job_card_selector: ".job-card, .job-listing, article"
+    extraction:
+      title: "h2, .job-title"
+      company: ".company"
+      location: ".location"
+    notes: "Concordia startup incubator. Good for early-stage CTO/VP roles."
+
+  startupjobs:
+    name: "Startup.jobs Montreal"
+    enabled: true
+    priority: 6
+    search_url: "https://startup.jobs/locations/montreal?q={query}"
+    job_card_selector: ".job-card, .job-listing, article"
+    extraction:
+      title: "h2, .job-title"
+      company: ".company"
+      location: ".location"
+    notes: "Startup-focused job board with Montreal filter."
 
   wellfound:
     name: "Wellfound (AngelList)"

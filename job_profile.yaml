@@ -9,6 +9,13 @@ target_roles:
   - "Technical Lead"
   - "Principal Architect"
   - "Head of Engineering"
+  - "AI/ML Lead"
+  - "ML Engineer"
+  - "AI Lead"
+  - "Head of AI"
+  - "Data Science Lead"
+  - "Senior Scientist"
+  - "Research Engineer"
 
 company_size:
   min: 200

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from jobhunt.db import add_job, get_job, update_job
+from jobhunt.db import add_job, delete_job, get_job, update_job
 from jobhunt.models import JobCreate, JobStatus, JobUpdate
 from ..dependencies import get_db, get_templates
 
@@ -128,6 +128,37 @@ async def cover_letter(
             "cover_letter": cover_letter_html,
         },
     )
+
+
+@router.post("/{job_id}/notes", response_class=HTMLResponse, response_model=None)
+async def add_note(
+    request: Request,
+    job_id: int,
+    conn: DBDep,
+    note: Annotated[str, Form()],
+) -> HTMLResponse | RedirectResponse:
+    """Append a note to a job's existing notes."""
+    job = get_job(conn, job_id)
+    if job is None:
+        return RedirectResponse("/", status_code=302)
+
+    existing = job.notes or ""
+    timestamp = __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M")
+    separator = "\n\n" if existing else ""
+    updated_notes = f"{existing}{separator}[{timestamp}] {note}"
+
+    update_job(conn, job_id, JobUpdate(notes=updated_notes))
+    return RedirectResponse(f"/jobs/{job_id}", status_code=302)
+
+
+@router.post("/{job_id}/delete", response_model=None)
+async def delete_job_route(
+    job_id: int,
+    conn: DBDep,
+) -> RedirectResponse:
+    """Delete a job from the tracker."""
+    delete_job(conn, job_id)
+    return RedirectResponse("/", status_code=302)
 
 
 @router.post("/{job_id}/status", response_class=HTMLResponse, response_model=None)

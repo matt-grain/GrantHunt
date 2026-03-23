@@ -129,6 +129,9 @@ function onDrop(e) {
         return;
     }
 
+    // Capture card ref before onDragEnd clears it
+    const card = draggedCard;
+
     // Send status update via HTMX-style fetch
     const formData = new FormData();
     formData.append('status', newStatus);
@@ -140,8 +143,8 @@ function onDrop(e) {
         if (response.ok) {
             // Move card to new column
             const targetCards = column.querySelector('.kanban-cards');
-            draggedCard.dataset.status = newStatus;
-            targetCards.appendChild(draggedCard);
+            card.dataset.status = newStatus;
+            targetCards.appendChild(card);
 
             // Remove empty state if present
             const emptyState = targetCards.querySelector('.empty-column');

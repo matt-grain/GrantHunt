@@ -23,10 +23,15 @@ DBDep = Annotated[sqlite3.Connection, Depends(get_db)]
 
 
 @router.get("", response_class=HTMLResponse)
-async def prospect_review(request: Request, conn: DBDep) -> HTMLResponse:
+async def prospect_review(
+    request: Request,
+    conn: DBDep,
+    sort: str = "quick_score",
+    dir: str = "desc",
+) -> HTMLResponse:
     """Render the prospect review page with pending prospects."""
     templates = get_templates(request)
-    prospects = list_prospects(conn, ProspectStatus.PENDING)
+    prospects = list_prospects(conn, ProspectStatus.PENDING, sort_by=sort, sort_dir=dir)
     counts = count_prospects_by_status(conn)
 
     return templates.TemplateResponse(
@@ -37,6 +42,8 @@ async def prospect_review(request: Request, conn: DBDep) -> HTMLResponse:
             "pending_count": counts.get("PENDING", 0),
             "tracked_count": counts.get("TRACKED", 0),
             "dismissed_count": counts.get("DISMISSED", 0),
+            "sort_by": sort,
+            "sort_dir": dir,
         },
     )
 

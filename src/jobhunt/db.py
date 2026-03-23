@@ -339,17 +339,32 @@ def get_prospect_by_url(conn: sqlite3.Connection, url: str) -> JobProspect | Non
 
 
 def list_prospects(
-    conn: sqlite3.Connection, status: ProspectStatus | None = None
+    conn: sqlite3.Connection,
+    status: ProspectStatus | None = None,
+    sort_by: str = "quick_score",
+    sort_dir: str = "desc",
 ) -> list[JobProspect]:
-    """List all prospects, optionally filtered by status."""
+    """List all prospects, optionally filtered by status.
+
+    Args:
+        conn: Database connection.
+        status: Optional status filter.
+        sort_by: Column to sort by (quick_score, discovered_at, title, company).
+        sort_dir: Sort direction (asc or desc).
+    """
+    valid_columns = {"quick_score", "discovered_at", "title", "company", "location"}
+    if sort_by not in valid_columns:
+        sort_by = "quick_score"
+    sort_dir = "ASC" if sort_dir.lower() == "asc" else "DESC"
+
     if status is not None:
         cursor = conn.execute(
-            "SELECT * FROM job_prospects WHERE status = ? ORDER BY quick_score DESC",
+            f"SELECT * FROM job_prospects WHERE status = ? ORDER BY {sort_by} {sort_dir}",
             (status.value,),
         )
     else:
         cursor = conn.execute(
-            "SELECT * FROM job_prospects ORDER BY quick_score DESC"
+            f"SELECT * FROM job_prospects ORDER BY {sort_by} {sort_dir}"
         )
 
     return [_row_to_prospect(row) for row in cursor.fetchall()]
