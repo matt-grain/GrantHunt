@@ -1,40 +1,43 @@
 {% extends "base.html" %}
-{% block title %}Kanban - JobHunt{% endblock %}
+{% block title %}Kanban - GrantHunt{% endblock %}
 
 {% block content %}
 <h1 class="text-2xl font-bold mb-6">Kanban Board</h1>
 
 <div class="kanban-board flex gap-4 pb-4 w-full">
-    {% for status in ["NEW", "INTERESTED", "APPLIED", "INTERVIEWING", "OFFER"] %}
-    <div class="kanban-column flex-1 min-w-[250px] bg-gray-50 rounded-lg p-4"
+    {% for status in ["DISCOVERED", "EVALUATING", "PREPARING", "SUBMITTED", "UNDER_REVIEW", "APPROVED"] %}
+    <div class="kanban-column flex-1 min-w-[200px] bg-gray-50 rounded-lg p-4"
          data-status="{{ status }}"
          ondragover="onDragOver(event)"
          ondrop="onDrop(event)">
-        <h2 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <h2 class="font-semibold text-gray-700 mb-3 flex items-center gap-2 text-sm">
             <span class="status-dot status-{{ status|lower }}"></span>
-            {{ status }}
-            <span class="status-count">{{ jobs_by_status[status]|length }}</span>
+            {{ status|replace("_", " ") }}
+            <span class="status-count">{{ grants_by_status[status]|length }}</span>
         </h2>
 
         <div class="space-y-3 min-h-[300px] kanban-cards" id="kanban-{{ status|lower }}">
-            {% for job in jobs_by_status[status] %}
-            <div class="kanban-card" draggable="true" data-job-id="{{ job.id }}" data-status="{{ status }}"
+            {% for grant in grants_by_status[status] %}
+            <div class="kanban-card" draggable="true" data-grant-id="{{ grant.id }}" data-status="{{ status }}"
                  ondragstart="onDragStart(event)" ondragend="onDragEnd(event)">
-                <a href="/jobs/{{ job.id }}" class="block bg-white rounded shadow p-3 hover:shadow-md transition-shadow">
-                    <p class="font-medium text-sm">{{ job.title }}</p>
-                    <p class="text-xs text-gray-500">{{ job.company }}</p>
-                    {% if job.score %}
-                    <span class="score-badge {% if job.score >= 80 %}score-high{% elif job.score >= 60 %}score-mid{% else %}score-low{% endif %}">
-                        {{ job.score|int }}
+                <a href="/grants/{{ grant.id }}" class="block bg-white rounded shadow p-3 hover:shadow-md transition-shadow">
+                    <p class="font-medium text-sm">{{ grant.title }}</p>
+                    <p class="text-xs text-gray-500">{{ grant.organization }}</p>
+                    {% if grant.deadline %}
+                    <p class="text-xs text-amber-600 mt-1">Due: {{ grant.deadline.strftime('%b %d, %Y') }}</p>
+                    {% endif %}
+                    {% if grant.score %}
+                    <span class="score-badge {% if grant.score >= 80 %}score-high{% elif grant.score >= 60 %}score-mid{% else %}score-low{% endif %}">
+                        {{ grant.score|int }}
                     </span>
                     {% endif %}
                 </a>
             </div>
             {% endfor %}
 
-            {% if not jobs_by_status[status] %}
+            {% if not grants_by_status[status] %}
             <div class="empty-column">
-                <p>No jobs</p>
+                <p>No grants</p>
             </div>
             {% endif %}
         </div>
@@ -45,13 +48,14 @@
 <p class="text-gray-400 text-sm mt-4">Drag cards between columns to change status</p>
 
 <script>
-// Valid FSM transitions
+// Valid FSM transitions for grant pipeline
 const FSM_TRANSITIONS = {
-    'NEW': ['INTERESTED', 'REJECTED', 'WITHDRAWN'],
-    'INTERESTED': ['APPLIED', 'REJECTED', 'WITHDRAWN'],
-    'APPLIED': ['INTERVIEWING', 'REJECTED', 'WITHDRAWN'],
-    'INTERVIEWING': ['OFFER', 'REJECTED', 'WITHDRAWN'],
-    'OFFER': ['REJECTED', 'WITHDRAWN'],
+    'DISCOVERED': ['EVALUATING', 'WITHDRAWN'],
+    'EVALUATING': ['PREPARING', 'WITHDRAWN'],
+    'PREPARING': ['SUBMITTED', 'WITHDRAWN'],
+    'SUBMITTED': ['UNDER_REVIEW', 'WITHDRAWN'],
+    'UNDER_REVIEW': ['APPROVED', 'REJECTED', 'WITHDRAWN'],
+    'APPROVED': [],
     'REJECTED': [],
     'WITHDRAWN': []
 };
@@ -59,12 +63,10 @@ const FSM_TRANSITIONS = {
 let draggedCard = null;
 
 function canTransition(from, to) {
-    // Allow any forward transition in the main flow
-    const mainFlow = ['NEW', 'INTERESTED', 'APPLIED', 'INTERVIEWING', 'OFFER'];
+    const mainFlow = ['DISCOVERED', 'EVALUATING', 'PREPARING', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED'];
     const fromIdx = mainFlow.indexOf(from);
     const toIdx = mainFlow.indexOf(to);
     if (fromIdx !== -1 && toIdx !== -1 && toIdx > fromIdx) return true;
-    // Also allow explicit FSM transitions
     return FSM_TRANSITIONS[from]?.includes(to) || false;
 }
 
@@ -73,10 +75,9 @@ function onDragStart(e) {
     if (!draggedCard) return;
     draggedCard.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', e.target.dataset.jobId);
+    e.dataTransfer.setData('text/plain', draggedCard.dataset.grantId);
 
-    // Highlight valid drop targets
-    const currentStatus = e.target.dataset.status;
+    const currentStatus = draggedCard.dataset.status;
     document.querySelectorAll('.kanban-column').forEach(col => {
         const targetStatus = col.dataset.status;
         if (canTransition(currentStatus, targetStatus)) {
@@ -117,7 +118,7 @@ function onDrop(e) {
     const column = e.target.closest('.kanban-column');
     if (!column || !draggedCard) return;
 
-    const jobId = draggedCard.dataset.jobId;
+    const grantId = draggedCard.dataset.grantId;
     const currentStatus = draggedCard.dataset.status;
     const newStatus = column.dataset.status;
 
@@ -129,28 +130,23 @@ function onDrop(e) {
         return;
     }
 
-    // Capture card ref before onDragEnd clears it
     const card = draggedCard;
 
-    // Send status update via HTMX-style fetch
     const formData = new FormData();
     formData.append('status', newStatus);
 
-    fetch(`/jobs/${jobId}/status`, {
+    fetch(`/grants/${grantId}/status`, {
         method: 'POST',
         body: formData
     }).then(response => {
         if (response.ok) {
-            // Move card to new column
             const targetCards = column.querySelector('.kanban-cards');
             card.dataset.status = newStatus;
             targetCards.appendChild(card);
 
-            // Remove empty state if present
             const emptyState = targetCards.querySelector('.empty-column');
             if (emptyState) emptyState.remove();
 
-            // Update counts
             updateColumnCounts();
         }
     });

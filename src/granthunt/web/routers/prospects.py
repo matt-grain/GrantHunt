@@ -50,7 +50,7 @@ async def prospect_review(
 
 @router.post("/{prospect_id}/track", response_class=HTMLResponse)
 async def track(prospect_id: int, conn: DBDep) -> str:
-    """Track a prospect (add to job pipeline). Returns empty for HTMX delete."""
+    """Track a prospect (add to grant pipeline). Returns empty for HTMX delete."""
     track_prospect(conn, prospect_id)
     return ""  # Row will be removed via hx-swap="delete"
 

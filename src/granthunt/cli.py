@@ -8,46 +8,47 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from granthunt.application import generate_loi
 from granthunt.config import load_profile
-from granthunt.cover_letter import generate_cover_letter
 from granthunt.db import (
-    add_job,
+    add_grant,
     add_prospect,
     count_prospects_by_status,
-    delete_job,
+    delete_grant,
     dismiss_prospect,
-    get_job,
+    get_grant,
     get_last_scrape,
     get_prospect,
     init_db,
-    list_jobs,
+    list_grants,
     list_prospects,
     list_scrape_history,
     track_prospect,
-    update_job,
+    update_grant,
 )
-from granthunt.matcher import score_job
+from granthunt.matcher import score_grant
 from granthunt.models import (
-    JobCreate,
-    JobStatus,
-    JobUpdate,
+    GrantCreate,
+    GrantStatus,
+    GrantUpdate,
     ProspectCreate,
     ProspectStatus,
 )
-from granthunt.research import research_company
-from granthunt.scraper import fetch_job_posting
+from granthunt.research import research_organization
+from granthunt.scraper import fetch_grant_posting
 
 app = typer.Typer(help="Grant search and application tracking CLI")
 console = Console()
 
 STATUS_COLORS = {
-    JobStatus.NEW: "blue",
-    JobStatus.INTERESTED: "cyan",
-    JobStatus.APPLIED: "yellow",
-    JobStatus.INTERVIEWING: "green",
-    JobStatus.OFFER: "bright_green",
-    JobStatus.REJECTED: "red",
-    JobStatus.WITHDRAWN: "dim",
+    GrantStatus.DISCOVERED: "blue",
+    GrantStatus.EVALUATING: "cyan",
+    GrantStatus.PREPARING: "yellow",
+    GrantStatus.SUBMITTED: "magenta",
+    GrantStatus.UNDER_REVIEW: "green",
+    GrantStatus.APPROVED: "bright_green",
+    GrantStatus.REJECTED: "red",
+    GrantStatus.WITHDRAWN: "dim",
 }
 
 PROSPECT_COLORS = {
@@ -60,29 +61,59 @@ PROSPECT_COLORS = {
 @app.command()
 def add(
     url: str,
-    title: Annotated[str, typer.Option("--title", "-t", help="Job title")],
-    company: Annotated[str, typer.Option("--company", "-c", help="Company name")],
+    title: Annotated[str, typer.Option("--title", "-t", help="Grant title")],
+    organization: Annotated[
+        str, typer.Option("--organization", "-o", help="Granting organization name")
+    ],
+    deadline: Annotated[
+        str | None,
+        typer.Option("--deadline", "-d", help="Application deadline (YYYY-MM-DD)"),
+    ] = None,
+    amount_min: Annotated[
+        float | None,
+        typer.Option("--amount-min", help="Minimum grant amount"),
+    ] = None,
+    amount_max: Annotated[
+        float | None,
+        typer.Option("--amount-max", help="Maximum grant amount"),
+    ] = None,
+    grant_type: Annotated[
+        str | None,
+        typer.Option("--grant-type", "-g", help="Grant type (e.g. R&D, Commercialization)"),
+    ] = None,
     location: Annotated[
-        str | None, typer.Option("--location", "-l", help="Job location")
+        str | None, typer.Option("--location", "-l", help="Grant location/eligibility region")
     ] = None,
     notes: Annotated[
-        str | None, typer.Option("--notes", "-n", help="Notes about this job")
+        str | None, typer.Option("--notes", "-n", help="Notes about this grant")
     ] = None,
 ) -> None:
-    """Add a new job to the tracker."""
+    """Add a new grant to the tracker."""
+    deadline_dt = None
+    if deadline:
+        try:
+            deadline_dt = datetime.strptime(deadline, "%Y-%m-%d")
+        except ValueError:
+            console.print(f"[red]Invalid deadline format:[/red] {deadline} (expected YYYY-MM-DD)")
+            raise typer.Exit(1)
+
     conn = init_db()
-    job_data = JobCreate(
+    grant_data = GrantCreate(
         url=url,
         title=title,
-        company=company,
+        organization=organization,
+        deadline=deadline_dt,
+        amount_min=amount_min,
+        amount_max=amount_max,
+        grant_type=grant_type,
         location=location,
         notes=notes,
     )
-    job = add_job(conn, job_data)
+    grant = add_grant(conn, grant_data)
     conn.close()
 
     console.print(
-        f"[green]Added job:[/green] {job.title} at {job.company} (ID: {job.id})"
+        f"[green]Added grant:[/green] {grant.title} from {grant.organization} (ID: {grant.id})"
     )
 
 
@@ -91,60 +122,65 @@ def list_cmd(
     status: Annotated[
         str | None,
         typer.Option(
-            "--status", "-s", help="Filter by status (NEW, INTERESTED, APPLIED, etc.)"
+            "--status",
+            "-s",
+            help="Filter by status (DISCOVERED, EVALUATING, PREPARING, etc.)",
         ),
     ] = None,
-    all_jobs: Annotated[
+    all_grants: Annotated[
         bool,
         typer.Option(
-            "--all", "-a", help="Show all jobs including REJECTED and WITHDRAWN"
+            "--all", "-a", help="Show all grants including REJECTED and WITHDRAWN"
         ),
     ] = False,
 ) -> None:
-    """List jobs in your pipeline."""
+    """List grants in your pipeline."""
     conn = init_db()
 
     if status:
         try:
-            status_enum = JobStatus(status.upper())
+            status_enum = GrantStatus(status.upper())
         except ValueError:
             console.print(f"[red]Invalid status:[/red] {status}")
-            console.print(f"Valid statuses: {', '.join(s.value for s in JobStatus)}")
+            console.print(f"Valid statuses: {', '.join(s.value for s in GrantStatus)}")
             raise typer.Exit(1)
-        jobs = list_jobs(conn, status_enum)
+        grants = list_grants(conn, status_enum)
     else:
-        jobs = list_jobs(conn)
-        if not all_jobs:
-            jobs = [
-                j
-                for j in jobs
-                if j.status not in (JobStatus.REJECTED, JobStatus.WITHDRAWN)
+        grants = list_grants(conn)
+        if not all_grants:
+            grants = [
+                g
+                for g in grants
+                if g.status not in (GrantStatus.REJECTED, GrantStatus.WITHDRAWN)
             ]
 
     conn.close()
 
-    if not jobs:
-        console.print("[dim]No jobs found.[/dim]")
+    if not grants:
+        console.print("[dim]No grants found.[/dim]")
         return
 
-    table = Table(title="Job Pipeline")
+    table = Table(title="Grant Pipeline")
     table.add_column("ID", style="dim", width=4)
     table.add_column("Title", width=25)
-    table.add_column("Company", width=20)
-    table.add_column("Status", width=12)
+    table.add_column("Organization", width=20)
+    table.add_column("Status", width=13)
+    table.add_column("Deadline", width=12)
     table.add_column("Score", width=6)
     table.add_column("Updated", width=12)
 
-    for job in jobs:
-        status_color = STATUS_COLORS.get(job.status, "white")
-        score_str = f"{job.score:.1f}" if job.score is not None else "-"
-        date_str = job.date_updated.strftime("%Y-%m-%d")
+    for grant in grants:
+        status_color = STATUS_COLORS.get(grant.status, "white")
+        score_str = f"{grant.score:.1f}" if grant.score is not None else "-"
+        date_str = grant.date_updated.strftime("%Y-%m-%d")
+        deadline_str = grant.deadline.strftime("%Y-%m-%d") if grant.deadline else "-"
 
         table.add_row(
-            str(job.id),
-            job.title,
-            job.company,
-            f"[{status_color}]{job.status.value}[/{status_color}]",
+            str(grant.id),
+            grant.title,
+            grant.organization,
+            f"[{status_color}]{grant.status.value}[/{status_color}]",
+            deadline_str,
             score_str,
             date_str,
         )
@@ -153,37 +189,47 @@ def list_cmd(
 
 
 @app.command()
-def show(job_id: int) -> None:
-    """Show details for a specific job."""
+def show(grant_id: int) -> None:
+    """Show details for a specific grant."""
     conn = init_db()
-    job = get_job(conn, job_id)
+    grant = get_grant(conn, grant_id)
     conn.close()
 
-    if job is None:
-        console.print(f"[red]Job not found:[/red] ID {job_id}")
+    if grant is None:
+        console.print(f"[red]Grant not found:[/red] ID {grant_id}")
         raise typer.Exit(1)
 
-    status_color = STATUS_COLORS.get(job.status, "white")
+    status_color = STATUS_COLORS.get(grant.status, "white")
 
-    content = f"""[bold]Title:[/bold] {job.title}
-[bold]Company:[/bold] {job.company}
-[bold]Location:[/bold] {job.location or "Not specified"}
-[bold]Status:[/bold] [{status_color}]{job.status.value}[/{status_color}]
-[bold]Score:[/bold] {job.score if job.score is not None else "Not scored"}
-[bold]URL:[/bold] {job.url}
-[bold]Added:[/bold] {job.date_added.strftime("%Y-%m-%d %H:%M")}
-[bold]Updated:[/bold] {job.date_updated.strftime("%Y-%m-%d %H:%M")}
+    amount_parts = []
+    if grant.amount_min is not None:
+        amount_parts.append(f"${grant.amount_min:,.0f}")
+    if grant.amount_max is not None:
+        amount_parts.append(f"${grant.amount_max:,.0f}")
+    amount_str = " – ".join(amount_parts) if amount_parts else "Not specified"
+
+    content = f"""[bold]Title:[/bold] {grant.title}
+[bold]Organization:[/bold] {grant.organization}
+[bold]Grant Type:[/bold] {grant.grant_type or "Not specified"}
+[bold]Location:[/bold] {grant.location or "Not specified"}
+[bold]Deadline:[/bold] {grant.deadline.strftime("%Y-%m-%d") if grant.deadline else "Not specified"}
+[bold]Amount Range:[/bold] {amount_str}
+[bold]Status:[/bold] [{status_color}]{grant.status.value}[/{status_color}]
+[bold]Score:[/bold] {grant.score if grant.score is not None else "Not scored"}
+[bold]URL:[/bold] {grant.url}
+[bold]Added:[/bold] {grant.date_added.strftime("%Y-%m-%d %H:%M")}
+[bold]Updated:[/bold] {grant.date_updated.strftime("%Y-%m-%d %H:%M")}
 
 [bold]Notes:[/bold]
-{job.notes or "No notes"}"""
+{grant.notes or "No notes"}"""
 
-    panel = Panel(content, title=f"Job #{job.id}", expand=False)
+    panel = Panel(content, title=f"Grant #{grant.id}", expand=False)
     console.print(panel)
 
 
 @app.command()
 def update(
-    job_id: int,
+    grant_id: int,
     status: Annotated[
         str | None,
         typer.Option("--status", "-s", help="New status"),
@@ -196,11 +242,15 @@ def update(
         float | None,
         typer.Option("--score", help="Match score (0-100)"),
     ] = None,
+    deadline: Annotated[
+        str | None,
+        typer.Option("--deadline", "-d", help="Application deadline (YYYY-MM-DD)"),
+    ] = None,
 ) -> None:
-    """Update a job's status, notes, or score."""
-    if status is None and notes is None and score is None:
+    """Update a grant's status, notes, score, or deadline."""
+    if status is None and notes is None and score is None and deadline is None:
         console.print(
-            "[yellow]Nothing to update. Use --status, --notes, or --score.[/yellow]"
+            "[yellow]Nothing to update. Use --status, --notes, --score, or --deadline.[/yellow]"
         )
         raise typer.Exit(1)
 
@@ -209,77 +259,92 @@ def update(
     status_enum = None
     if status:
         try:
-            status_enum = JobStatus(status.upper())
+            status_enum = GrantStatus(status.upper())
         except ValueError:
             console.print(f"[red]Invalid status:[/red] {status}")
-            console.print(f"Valid statuses: {', '.join(s.value for s in JobStatus)}")
+            console.print(f"Valid statuses: {', '.join(s.value for s in GrantStatus)}")
             conn.close()
             raise typer.Exit(1)
 
-    job_update = JobUpdate(status=status_enum, notes=notes, score=score)
-    job = update_job(conn, job_id, job_update)
+    deadline_dt = None
+    if deadline:
+        try:
+            deadline_dt = datetime.strptime(deadline, "%Y-%m-%d")
+        except ValueError:
+            console.print(f"[red]Invalid deadline format:[/red] {deadline} (expected YYYY-MM-DD)")
+            conn.close()
+            raise typer.Exit(1)
+
+    grant_update = GrantUpdate(
+        status=status_enum, notes=notes, score=score, deadline=deadline_dt
+    )
+    grant = update_grant(conn, grant_id, grant_update)
     conn.close()
 
-    if job is None:
-        console.print(f"[red]Job not found:[/red] ID {job_id}")
+    if grant is None:
+        console.print(f"[red]Grant not found:[/red] ID {grant_id}")
         raise typer.Exit(1)
 
-    console.print(f"[green]Updated job {job_id}:[/green] {job.title} at {job.company}")
+    console.print(
+        f"[green]Updated grant {grant_id}:[/green] {grant.title} from {grant.organization}"
+    )
     if status:
-        console.print(f"  Status: {job.status.value}")
+        console.print(f"  Status: {grant.status.value}")
     if notes:
         console.print(f"  Notes: {notes[:50]}{'...' if len(notes) > 50 else ''}")
     if score is not None:
         console.print(f"  Score: {score}")
+    if deadline:
+        console.print(f"  Deadline: {deadline}")
 
 
 @app.command()
-def delete(job_id: int) -> None:
-    """Delete a job from the tracker."""
+def delete(grant_id: int) -> None:
+    """Delete a grant from the tracker."""
     conn = init_db()
-    job = get_job(conn, job_id)
+    grant = get_grant(conn, grant_id)
 
-    if job is None:
-        console.print(f"[red]Job not found:[/red] ID {job_id}")
+    if grant is None:
+        console.print(f"[red]Grant not found:[/red] ID {grant_id}")
         conn.close()
         raise typer.Exit(1)
 
-    if not typer.confirm(f"Delete '{job.title}' at {job.company}?"):
+    if not typer.confirm(f"Delete '{grant.title}' from {grant.organization}?"):
         console.print("[dim]Cancelled.[/dim]")
         conn.close()
         raise typer.Exit(0)
 
-    delete_job(conn, job_id)
+    delete_grant(conn, grant_id)
     conn.close()
-    console.print(f"[green]Deleted job {job_id}.[/green]")
+    console.print(f"[green]Deleted grant {grant_id}.[/green]")
 
 
 @app.command()
 def stats() -> None:
     """Show pipeline statistics."""
     conn = init_db()
-    jobs = list_jobs(conn)
+    grants = list_grants(conn)
     conn.close()
 
-    if not jobs:
-        console.print("[dim]No jobs in pipeline.[/dim]")
+    if not grants:
+        console.print("[dim]No grants in pipeline.[/dim]")
         return
 
-    status_counts: dict[JobStatus, int] = {}
-    for job in jobs:
-        status_counts[job.status] = status_counts.get(job.status, 0) + 1
+    status_counts: dict[GrantStatus, int] = {}
+    for grant in grants:
+        status_counts[grant.status] = status_counts.get(grant.status, 0) + 1
 
-    table = Table(title="Pipeline Statistics")
+    table = Table(title="Grant Pipeline Statistics")
     table.add_column("Status", width=15)
     table.add_column("Count", width=8, justify="right")
 
-    for status in JobStatus:
+    for status in GrantStatus:
         count = status_counts.get(status, 0)
         if count > 0:
             color = STATUS_COLORS.get(status, "white")
             table.add_row(f"[{color}]{status.value}[/{color}]", str(count))
 
-    table.add_row("[bold]Total[/bold]", f"[bold]{len(jobs)}[/bold]")
+    table.add_row("[bold]Total[/bold]", f"[bold]{len(grants)}[/bold]")
 
     console.print(table)
 
@@ -292,13 +357,13 @@ def match(
         typer.Option("--add", "-a", help="Add to tracker after matching"),
     ] = False,
 ) -> None:
-    """Analyze a job posting and score it against your profile."""
-    console.print("[dim]Fetching job posting...[/dim]")
+    """Analyze a grant posting and score it against your profile."""
+    console.print("[dim]Fetching grant posting...[/dim]")
 
     try:
-        job_data = asyncio.run(fetch_job_posting(url))
+        grant_data = asyncio.run(fetch_grant_posting(url))
     except Exception as e:
-        console.print(f"[red]Error fetching job:[/red] {e}")
+        console.print(f"[red]Error fetching grant:[/red] {e}")
         raise typer.Exit(1) from None
 
     console.print("[dim]Analyzing match...[/dim]")
@@ -309,7 +374,7 @@ def match(
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1) from None
 
-    result = score_job(job_data, profile)
+    result = score_grant(grant_data, profile)
 
     if result.overall_score >= 70:
         score_color = "green"
@@ -318,12 +383,24 @@ def match(
     else:
         score_color = "red"
 
-    remote_str = job_data.remote if job_data.remote is not None else "Unknown"
-    content = f"""[bold]Title:[/bold] {job_data.title}
-[bold]Company:[/bold] {job_data.company}
-[bold]Location:[/bold] {job_data.location}
-[bold]Remote:[/bold] {remote_str}
-[bold]Salary:[/bold] {job_data.salary or "Not specified"}
+    amount_parts = []
+    if grant_data.amount_min is not None:
+        amount_parts.append(f"${grant_data.amount_min:,.0f}")
+    if grant_data.amount_max is not None:
+        amount_parts.append(f"${grant_data.amount_max:,.0f}")
+    amount_str = " – ".join(amount_parts) if amount_parts else "Not specified"
+
+    deadline_str = (
+        grant_data.deadline.strftime("%Y-%m-%d")
+        if grant_data.deadline is not None
+        else "Not specified"
+    )
+
+    content = f"""[bold]Title:[/bold] {grant_data.title}
+[bold]Organization:[/bold] {grant_data.organization}
+[bold]Grant Type:[/bold] {grant_data.grant_type or "Not specified"}
+[bold]Deadline:[/bold] {deadline_str}
+[bold]Amount Range:[/bold] {amount_str}
 
 [bold]Overall Score:[/bold] [{score_color}]{result.overall_score}/100[/{score_color}]
 [bold]Recommendation:[/bold] [{score_color}]{result.recommendation}[/{score_color}]
@@ -344,51 +421,54 @@ def match(
         for rf in result.red_flags:
             content += f"\n  [red]![/red] {rf}"
 
-    panel = Panel(content, title="Job Match Analysis", expand=False)
+    panel = Panel(content, title="Grant Match Analysis", expand=False)
     console.print(panel)
 
     should_add = add_to_tracker
     if not should_add and result.overall_score >= 50:
-        should_add = typer.confirm("\nAdd this job to your tracker?")
+        should_add = typer.confirm("\nAdd this grant to your tracker?")
 
     if should_add:
         conn = init_db()
-        job_create = JobCreate(
+        grant_create = GrantCreate(
             url=url,
-            title=job_data.title,
-            company=job_data.company,
-            location=job_data.location,
+            title=grant_data.title,
+            organization=grant_data.organization,
+            location=grant_data.location,
+            grant_type=grant_data.grant_type,
+            deadline=grant_data.deadline,
+            amount_min=grant_data.amount_min,
+            amount_max=grant_data.amount_max,
             notes=f"Score: {result.overall_score}/100 - {result.recommendation}",
         )
-        job = add_job(conn, job_create)
-        update_job(conn, job.id, JobUpdate(score=result.overall_score))
+        grant = add_grant(conn, grant_create)
+        update_grant(conn, grant.id, GrantUpdate(score=result.overall_score))
         conn.close()
         console.print(
-            f"[green]Added to tracker:[/green] {job.title} at {job.company} (ID: {job.id})"
+            f"[green]Added to tracker:[/green] {grant.title} from {grant.organization} (ID: {grant.id})"
         )
 
 
 @app.command()
-def research(job_id: int) -> None:
-    """Research a company from a tracked job."""
+def research(grant_id: int) -> None:
+    """Research an organization from a tracked grant."""
     conn = init_db()
-    job = get_job(conn, job_id)
+    grant = get_grant(conn, grant_id)
     conn.close()
 
-    if job is None:
-        console.print(f"[red]Job not found:[/red] ID {job_id}")
+    if grant is None:
+        console.print(f"[red]Grant not found:[/red] ID {grant_id}")
         raise typer.Exit(1)
 
-    console.print(f"[dim]Researching {job.company}...[/dim]")
+    console.print(f"[dim]Researching {grant.organization}...[/dim]")
 
     try:
-        result = asyncio.run(research_company(job.company))
+        result = asyncio.run(research_organization(grant.organization))
     except Exception as e:
-        console.print(f"[red]Error researching company:[/red] {e}")
+        console.print(f"[red]Error researching organization:[/red] {e}")
         raise typer.Exit(1) from None
 
-    # Build output
-    content = f"""[bold]Company:[/bold] {result.name}
+    content = f"""[bold]Organization:[/bold] {result.name}
 [bold]Website:[/bold] {result.website or "Not found"}
 [bold]Industry:[/bold] {result.industry or "Unknown"}
 [bold]Size:[/bold] {result.size or "Unknown"}
@@ -396,74 +476,75 @@ def research(job_id: int) -> None:
 [bold]Description:[/bold]
 {result.description or "No description available"}"""
 
-    if result.tech_stack:
-        content += "\n\n[bold cyan]Tech Stack:[/bold cyan]"
-        for tech in result.tech_stack:
-            content += f"\n  - {tech}"
+    if result.programs:
+        content += "\n\n[bold cyan]Grant Programs:[/bold cyan]"
+        for program in result.programs:
+            content += f"\n  - {program}"
 
-    if result.culture_signals:
-        content += "\n\n[bold green]Culture Signals:[/bold green]"
-        for signal in result.culture_signals:
+    if result.funding_signals:
+        content += "\n\n[bold green]Funding Signals:[/bold green]"
+        for signal in result.funding_signals:
             content += f"\n  + {signal}"
 
-    if result.interview_prep:
-        content += "\n\n[bold yellow]Interview Questions to Ask:[/bold yellow]"
-        for i, question in enumerate(result.interview_prep, 1):
-            content += f"\n  {i}. {question}"
+    if result.application_tips:
+        content += "\n\n[bold yellow]Application Tips:[/bold yellow]"
+        for i, tip in enumerate(result.application_tips, 1):
+            content += f"\n  {i}. {tip}"
 
-    panel = Panel(content, title=f"Company Research: {job.company}", expand=False)
+    panel = Panel(
+        content, title=f"Organization Research: {grant.organization}", expand=False
+    )
     console.print(panel)
 
 
-@app.command("cover-letter")
-def cover_letter_cmd(
-    job_id: int,
+@app.command("apply")
+def apply_cmd(
+    grant_id: int,
     output: Annotated[
         Path | None,
         typer.Option("--output", "-o", help="Save to file instead of displaying"),
     ] = None,
-    research: Annotated[
+    research_file: Annotated[
         Path | None,
         typer.Option(
             "--research", "-r", help="Path to research.md for personalization"
         ),
     ] = None,
 ) -> None:
-    """Generate a cover letter for a tracked job."""
+    """Generate a Letter of Intent (LOI) for a tracked grant."""
     conn = init_db()
-    job = get_job(conn, job_id)
+    grant = get_grant(conn, grant_id)
     conn.close()
 
-    if job is None:
-        console.print(f"[red]Job not found:[/red] ID {job_id}")
+    if grant is None:
+        console.print(f"[red]Grant not found:[/red] ID {grant_id}")
         raise typer.Exit(1)
 
     console.print(
-        f"[dim]Generating cover letter for {job.title} at {job.company}...[/dim]"
+        f"[dim]Generating LOI for {grant.title} from {grant.organization}...[/dim]"
     )
 
     # Auto-detect research file if not provided
-    if research is None:
-        # Check applications folder for research.md
-        possible_research = list(Path("applications").glob(f"{job_id}-*/research.md"))
+    if research_file is None:
+        possible_research = list(Path("applications").glob(f"{grant_id}-*/research.md"))
         if possible_research:
-            research = possible_research[0]
-            console.print(f"[dim]Using research from: {research}[/dim]")
+            research_file = possible_research[0]
+            console.print(f"[dim]Using research from: {research_file}[/dim]")
 
     try:
-        letter = generate_cover_letter(job, output, research)
+        loi = generate_loi(grant, output, research_file)
     except FileNotFoundError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1) from None
     except Exception as e:
-        console.print(f"[red]Error generating cover letter:[/red] {e}")
+        console.print(f"[red]Error generating LOI:[/red] {e}")
         raise typer.Exit(1) from None
 
     if output:
-        console.print(f"[green]Cover letter saved to:[/green] {output}")
+        console.print(f"[green]LOI saved to:[/green] {output}")
     else:
         console.print()
-        console.print(Panel(letter, title="Cover Letter Draft", expand=False))
+        console.print(Panel(loi, title="Letter of Intent Draft", expand=False))
         console.print()
         console.print("[dim]Tip: Use --output FILE to save to a file[/dim]")
 
@@ -481,7 +562,7 @@ def prospects(
         typer.Option("--pending", "-p", help="Show only pending prospects"),
     ] = False,
 ) -> None:
-    """List discovered job prospects awaiting review."""
+    """List discovered grant prospects awaiting review."""
     conn = init_db()
 
     if pending_only:
@@ -505,13 +586,14 @@ def prospects(
         return
 
     pending_count = counts.get("PENDING", 0)
-    console.print(f"\n[bold]Job Prospects[/bold] ({pending_count} pending review)\n")
+    console.print(f"\n[bold]Grant Prospects[/bold] ({pending_count} pending review)\n")
 
     table = Table()
     table.add_column("ID", style="dim", width=4)
     table.add_column("Score", width=6, justify="right")
     table.add_column("Title", width=30)
-    table.add_column("Company", width=20)
+    table.add_column("Organization", width=20)
+    table.add_column("Amount Range", width=18)
     table.add_column("Location", width=15)
     table.add_column("Status", width=10)
 
@@ -528,14 +610,15 @@ def prospects(
             str(p.id),
             f"[{score_color}]{score_str}[/{score_color}]",
             p.title[:30],
-            p.company[:20],
+            p.organization[:20],
+            (p.amount_range or "-")[:18],
             (p.location or "-")[:15],
             f"[{status_color}]{p.status.value}[/{status_color}]",
         )
 
     console.print(table)
     console.print(
-        "\n[dim]Use 'jobhunt track <ID>' or 'jobhunt dismiss <ID>' to process[/dim]"
+        "\n[dim]Use 'granthunt track <ID>' or 'granthunt dismiss <ID>' to process[/dim]"
     )
 
 
@@ -543,7 +626,7 @@ def prospects(
 def track_cmd(
     prospect_id: int,
 ) -> None:
-    """Move a prospect to your job tracker."""
+    """Move a prospect to your grant tracker."""
     conn = init_db()
     prospect = get_prospect(conn, prospect_id)
 
@@ -554,17 +637,17 @@ def track_cmd(
 
     if prospect.status == ProspectStatus.TRACKED:
         console.print(
-            f"[yellow]Already tracked:[/yellow] {prospect.title} at {prospect.company}"
+            f"[yellow]Already tracked:[/yellow] {prospect.title} from {prospect.organization}"
         )
         conn.close()
         raise typer.Exit(0)
 
-    job = track_prospect(conn, prospect_id)
+    grant = track_prospect(conn, prospect_id)
     conn.close()
 
-    if job:
+    if grant:
         console.print(
-            f"[green]Tracked:[/green] {job.title} at {job.company} (Job ID: {job.id})"
+            f"[green]Tracked:[/green] {grant.title} from {grant.organization} (Grant ID: {grant.id})"
         )
     else:
         console.print("[red]Failed to track prospect[/red]")
@@ -586,19 +669,19 @@ def dismiss_cmd(
 
     if prospect.status == ProspectStatus.DISMISSED:
         console.print(
-            f"[dim]Already dismissed:[/dim] {prospect.title} at {prospect.company}"
+            f"[dim]Already dismissed:[/dim] {prospect.title} from {prospect.organization}"
         )
         conn.close()
         raise typer.Exit(0)
 
     dismiss_prospect(conn, prospect_id)
     conn.close()
-    console.print(f"[dim]Dismissed:[/dim] {prospect.title} at {prospect.company}")
+    console.print(f"[dim]Dismissed:[/dim] {prospect.title} from {prospect.organization}")
 
 
 @app.command("review")
 def review_cmd() -> None:
-    """Interactive review of pending prospects."""
+    """Interactive review of pending grant prospects."""
     conn = init_db()
     pending = list_prospects(conn, ProspectStatus.PENDING)
 
@@ -607,7 +690,7 @@ def review_cmd() -> None:
         conn.close()
         return
 
-    console.print(f"\n[bold]Review {len(pending)} Prospects[/bold]")
+    console.print(f"\n[bold]Review {len(pending)} Grant Prospects[/bold]")
     console.print("[dim]Commands: t=track, d=dismiss, s=skip, q=quit[/dim]\n")
 
     tracked = 0
@@ -624,16 +707,19 @@ def review_cmd() -> None:
         console.print(
             f"[{score_color}][{score_str}][/{score_color}] [bold]{p.title}[/bold]"
         )
-        console.print(f"    {p.company} · {p.location or 'Location unknown'}")
+        console.print(
+            f"    {p.organization} · {p.location or 'Location unknown'}"
+            + (f" · {p.amount_range}" if p.amount_range else "")
+        )
         console.print(f"    [dim]{p.url}[/dim]")
 
         while True:
             action = typer.prompt("Action", default="s").lower().strip()
 
             if action == "t":
-                job = track_prospect(conn, p.id)
-                if job:
-                    console.print(f"  [green]Tracked (Job #{job.id})[/green]\n")
+                grant = track_prospect(conn, p.id)
+                if grant:
+                    console.print(f"  [green]Tracked (Grant #{grant.id})[/green]\n")
                     tracked += 1
                 break
             elif action == "d":
@@ -660,27 +746,33 @@ def review_cmd() -> None:
 @app.command("add-prospect")
 def add_prospect_cmd(
     url: str,
-    title: Annotated[str, typer.Option("--title", "-t", help="Job title")],
-    company: Annotated[str, typer.Option("--company", "-c", help="Company name")],
+    title: Annotated[str, typer.Option("--title", "-t", help="Grant title")],
+    organization: Annotated[
+        str, typer.Option("--organization", "-o", help="Granting organization name")
+    ],
     location: Annotated[
-        str | None, typer.Option("--location", "-l", help="Job location")
+        str | None, typer.Option("--location", "-l", help="Grant location/eligibility region")
+    ] = None,
+    amount_range: Annotated[
+        str | None, typer.Option("--amount-range", help="Amount range (e.g. '$10K–$50K')")
     ] = None,
     score: Annotated[
         float | None, typer.Option("--score", "-s", help="Quick score (0-100)")
     ] = None,
     source: Annotated[
-        str, typer.Option("--source", help="Source (linkedin, indeed, etc.)")
-    ] = "linkedin",
+        str, typer.Option("--source", help="Source (innovation_canada, nrc, etc.)")
+    ] = "innovation_canada",
 ) -> None:
-    """Add a job prospect manually."""
+    """Add a grant prospect manually."""
     conn = init_db()
     prospect = add_prospect(
         conn,
         ProspectCreate(
             url=url,
             title=title,
-            company=company,
+            organization=organization,
             location=location,
+            amount_range=amount_range,
             quick_score=score,
             source=source,
         ),
@@ -688,7 +780,7 @@ def add_prospect_cmd(
     conn.close()
 
     console.print(
-        f"[green]Added prospect:[/green] {prospect.title} at {prospect.company} (ID: {prospect.id})"
+        f"[green]Added prospect:[/green] {prospect.title} from {prospect.organization} (ID: {prospect.id})"
     )
 
 
@@ -697,7 +789,7 @@ def scrape_history_cmd(
     source: Annotated[
         str | None,
         typer.Option(
-            "--source", "-s", help="Filter by source (linkedin, indeed, etc.)"
+            "--source", "-s", help="Filter by source (innovation_canada, nrc, etc.)"
         ),
     ] = None,
     limit: Annotated[
@@ -705,7 +797,7 @@ def scrape_history_cmd(
         typer.Option("--limit", "-n", help="Number of entries to show"),
     ] = 10,
 ) -> None:
-    """Show scrape history for job sources."""
+    """Show scrape history for grant sources."""
     conn = init_db()
     history = list_scrape_history(conn, source, limit)
 
@@ -715,7 +807,7 @@ def scrape_history_cmd(
         return
 
     table = Table(title="Scrape History")
-    table.add_column("Source", width=15)
+    table.add_column("Source", width=20)
     table.add_column("Query", width=25)
     table.add_column("Date", width=18)
     table.add_column("Found", width=6, justify="right")
@@ -740,7 +832,7 @@ def scrape_history_cmd(
             last = get_last_scrape(conn, src)
             if last:
                 ago = (datetime.now() - last.scraped_at).days
-                console.print(f"  {src}: {ago}d ago ({last.new_jobs} new jobs)")
+                console.print(f"  {src}: {ago}d ago ({last.new_jobs} new grants)")
 
     conn.close()
 
@@ -748,15 +840,17 @@ def scrape_history_cmd(
 @app.command()
 def serve(
     host: str = "127.0.0.1",
-    port: int = 9999,
+    port: int = 8888,
     reload: bool = False,
 ) -> None:
-    """Start the web dashboard server."""
+    """Start the GrantHunt web dashboard server."""
     import uvicorn
 
-    console.print(f"[green]Starting JobHunt dashboard at http://{host}:{port}[/green]")
+    console.print(
+        f"[green]Starting GrantHunt dashboard at http://{host}:{port}[/green]"
+    )
     uvicorn.run(
-        "jobhunt.web.app:create_app",
+        "granthunt.web.app:create_app",
         host=host,
         port=port,
         reload=reload,

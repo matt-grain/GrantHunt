@@ -1,16 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Pipeline - JobHunt{% endblock %}
+{% block title %}Grant Pipeline - GrantHunt{% endblock %}
 
 {% block content %}
 <div class="mb-8">
-    <h1 class="text-2xl font-bold mb-4">Pipeline Overview</h1>
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold">Grant Pipeline</h1>
+        <button hx-get="/grants/add" hx-target="#modal" hx-swap="innerHTML"
+                class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 text-sm">
+            + Add Grant
+        </button>
+    </div>
 
     <!-- Status counts bar -->
     {% include "partials/status_counts.html" %}
 </div>
 
-<!-- Job lists by status -->
-{% for status in ["NEW", "INTERESTED", "APPLIED", "INTERVIEWING", "OFFER"] %}
+<!-- Grant lists by status -->
+{% for status in ["DISCOVERED", "EVALUATING", "PREPARING", "SUBMITTED", "UNDER_REVIEW", "APPROVED"] %}
 <div class="mb-6">
     <h2 class="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
         {{ status }}
@@ -20,12 +26,12 @@
     </h2>
 
     <div class="space-y-3" id="list-{{ status|lower }}">
-        {% for job in jobs_by_status[status] %}
-            {% include "partials/job_card.html" %}
+        {% for grant in grants_by_status[status] %}
+            {% include "partials/grant_card.html" %}
         {% endfor %}
 
-        {% if not jobs_by_status[status] %}
-            <p class="text-gray-400 italic">No jobs in this stage</p>
+        {% if not grants_by_status[status] %}
+            <p class="text-gray-400 italic">No grants in this stage</p>
         {% endif %}
     </div>
 </div>

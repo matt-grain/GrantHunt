@@ -8,15 +8,22 @@
         </span>
     </td>
     <td class="px-4 py-3">
-        <a href="{{ prospect.url }}" target="_blank" class="text-blue-600 hover:underline font-medium">
+        <a href="{{ prospect.url }}" target="_blank" class="text-emerald-600 hover:underline font-medium">
             {{ prospect.title }}
         </a>
         {% if prospect.summary %}
         <p class="text-xs text-gray-500 truncate max-w-md mt-1">{{ prospect.summary }}</p>
         {% endif %}
     </td>
-    <td class="px-4 py-3 text-gray-700">{{ prospect.company }}</td>
+    <td class="px-4 py-3 text-gray-700">{{ prospect.organization }}</td>
     <td class="px-4 py-3 text-gray-500 text-sm">{{ prospect.discovered_at.strftime('%Y-%m-%d') }}</td>
+    <td class="px-4 py-3 text-gray-500 text-sm">
+        {% if prospect.deadline %}
+        {{ prospect.deadline.strftime('%b %d, %Y') }}
+        {% else %}
+        -
+        {% endif %}
+    </td>
     <td class="px-4 py-3 text-gray-500 text-sm">{{ prospect.location or "-" }}</td>
     <td class="px-4 py-3">
         <div class="flex gap-3 prospect-actions">
@@ -30,7 +37,7 @@
             <button hx-post="/prospects/{{ prospect.id }}/track"
                     hx-target="#prospect-{{ prospect.id }}"
                     hx-swap="delete"
-                    class="action-btn action-track" title="Track">
+                    class="action-btn action-track" title="Track Grant">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12"/>
                 </svg>

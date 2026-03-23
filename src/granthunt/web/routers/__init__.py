@@ -1,5 +1,5 @@
 """Router package for the web dashboard."""
 
-from . import dashboard, jobs, prospects, stats
+from . import dashboard, grants, prospects, stats
 
-__all__ = ["dashboard", "jobs", "prospects", "stats"]
+__all__ = ["dashboard", "grants", "prospects", "stats"]

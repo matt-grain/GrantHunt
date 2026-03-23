@@ -1,0 +1,32 @@
+<div id="grant-card-{{ grant.id }}"
+     class="grant-card bg-white rounded-lg shadow p-4 flex justify-between items-center hover:shadow-md transition-shadow">
+    <div>
+        <a href="/grants/{{ grant.id }}" class="font-medium text-gray-900 hover:text-emerald-600">
+            {{ grant.title }}
+        </a>
+        <p class="text-sm text-gray-500">
+            {{ grant.organization }}
+            {% if grant.location %} &middot; {{ grant.location }}{% endif %}
+        </p>
+        {% if grant.deadline %}
+        <p class="text-xs text-amber-600 mt-0.5">Due: {{ grant.deadline.strftime('%b %d, %Y') }}</p>
+        {% endif %}
+    </div>
+
+    <div class="flex items-center gap-3">
+        {% if grant.score %}
+        <span class="score-badge {% if grant.score >= 80 %}score-high{% elif grant.score >= 60 %}score-mid{% else %}score-low{% endif %}">
+            {{ grant.score|int }}
+        </span>
+        {% endif %}
+
+        <select hx-post="/grants/{{ grant.id }}/status"
+                hx-swap="none"
+                hx-on::after-request="window.location.reload()"
+                name="status" class="text-sm border rounded px-2 py-1">
+            {% for s in ["DISCOVERED", "EVALUATING", "PREPARING", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED", "WITHDRAWN"] %}
+                <option value="{{ s }}" {% if s == grant.status.value %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>

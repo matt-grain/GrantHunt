@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ grant.title }} - GrantHunt{% endblock %}
+
+{% block content %}
+<a href="/" class="text-emerald-600 hover:underline mb-4 inline-block">&larr; Back to Pipeline</a>
+
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h1 class="text-2xl font-bold">{{ grant.title }}</h1>
+    <p class="text-gray-600">
+        {{ grant.organization }}
+        {% if grant.program %} &middot; {{ grant.program }}{% endif %}
+        {% if grant.location %} &middot; {{ grant.location }}{% endif %}
+    </p>
+
+    <div class="mt-4 flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">Status:</span>
+            <select hx-post="/grants/{{ grant.id }}/status" hx-swap="none"
+                    name="status" class="border rounded px-2 py-1">
+                {% for s in statuses %}
+                    <option value="{{ s.value }}" {% if s == grant.status %}selected{% endif %}>
+                        {{ s.value }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if grant.deadline %}
+        {% set days_left = (grant.deadline - today).days %}
+        <span class="text-sm font-medium px-2 py-1 rounded
+                     {% if days_left <= 7 %}bg-red-100 text-red-700
+                     {% elif days_left <= 30 %}bg-amber-100 text-amber-700
+                     {% else %}bg-emerald-50 text-emerald-700{% endif %}">
+            Deadline: {{ grant.deadline.strftime('%b %d, %Y') }}
+            {% if days_left >= 0 %}({{ days_left }}d left){% else %}(overdue){% endif %}
+        </span>
+        {% endif %}
+
+        {% if grant.amount_min or grant.amount_max %}
+        <span class="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+            {% if grant.amount_min and grant.amount_max %}
+                ${{ "{:,}".format(grant.amount_min) }} – ${{ "{:,}".format(grant.amount_max) }}
+            {% elif grant.amount_max %}
+                Up to ${{ "{:,}".format(grant.amount_max) }}
+            {% else %}
+                From ${{ "{:,}".format(grant.amount_min) }}
+            {% endif %}
+        </span>
+        {% endif %}
+
+        {% if grant.grant_type %}
+        <span class="text-sm text-teal-700 bg-teal-50 px-2 py-1 rounded capitalize">
+            {{ grant.grant_type|replace("_", " ") }}
+        </span>
+        {% endif %}
+
+        {% if grant.score %}
+        <span class="score-badge {% if grant.score >= 80 %}score-high{% elif grant.score >= 60 %}score-mid{% else %}score-low{% endif %}">
+            Score: {{ grant.score|int }}/100
+        </span>
+        {% endif %}
+
+        <span class="text-sm text-gray-500">
+            Added: {{ grant.date_added.strftime('%b %d, %Y') }}
+        </span>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="bg-white rounded-lg shadow p-4 mb-6 flex gap-4 items-center">
+    <a href="{{ grant.url }}" target="_blank"
+       class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded">
+        View Grant Posting
+    </a>
+    {% if has_application %}
+    <a href="/grants/{{ grant.id }}/application" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded">
+        Letter of Intent
+    </a>
+    {% endif %}
+    <form method="post" action="/grants/{{ grant.id }}/delete" class="ml-auto"
+          onsubmit="return confirm('Remove this grant from the pipeline?')">
+        <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded text-sm">
+            Delete
+        </button>
+    </form>
+</div>
+
+<!-- Grant Description -->
+{% if grant.raw_description %}
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-3">Grant Description</h2>
+    <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">{{ grant.raw_description }}</div>
+</div>
+{% endif %}
+
+<!-- Funder Research -->
+{% if research %}
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-3">Funder Research</h2>
+    <div class="prose prose-sm max-w-none text-gray-700">
+        {{ research | safe }}
+    </div>
+</div>
+{% endif %}
+
+<!-- Notes -->
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-3">Notes</h2>
+    <div class="text-gray-700 whitespace-pre-wrap mb-4">{{ grant.notes or "No notes yet" }}</div>
+    <form method="post" action="/grants/{{ grant.id }}/notes" class="flex gap-2">
+        <input type="text" name="note" placeholder="Add a note..."
+               class="flex-1 border rounded px-3 py-2 text-sm" required>
+        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded text-sm">
+            Add
+        </button>
+    </form>
+</div>
+{% endblock %}

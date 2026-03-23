@@ -1,8 +1,8 @@
-<div class="flex gap-4 mb-6">
+<div class="flex gap-4 mb-6 flex-wrap">
     {% for status, count in status_counts.items() %}
-    <div class="bg-white rounded-lg shadow px-4 py-3 text-center min-w-[100px]">
+    <div class="bg-white rounded-lg shadow px-4 py-3 text-center min-w-[110px]">
         <p class="text-2xl font-bold text-gray-800">{{ count }}</p>
-        <p class="text-xs text-gray-500 uppercase">{{ status }}</p>
+        <p class="text-xs text-gray-500 uppercase">{{ status|replace("_", " ") }}</p>
     </div>
     {% endfor %}
 </div>

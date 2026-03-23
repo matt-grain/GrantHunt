@@ -1,4 +1,4 @@
-"""FastAPI application factory for the JobHunt web dashboard."""
+"""FastAPI application factory for the GrantHunt web dashboard."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .routers import dashboard, jobs, prospects, stats
+from .routers import dashboard, grants, prospects, stats
 
 
 def create_app() -> FastAPI:
@@ -27,7 +27,7 @@ def create_app() -> FastAPI:
     app.state.templates = templates
 
     app.include_router(dashboard.router)
-    app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
+    app.include_router(grants.router, prefix="/grants", tags=["grants"])
     app.include_router(prospects.router)
     app.include_router(stats.router)
 
