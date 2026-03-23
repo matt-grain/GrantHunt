@@ -1,48 +1,75 @@
+# FloteXa Grant Search Profile
 startup:
-  name: "Flotexa"
-  description: "Climate tech startup developing innovative solutions for environmental challenges"
-  industry: "Climate Tech"
-  stage: "seed"
-  location: "Quebec, Canada"
+  name: "FloteXa"
+  description: >
+    FloteXa designs and deploys vegetated floating islands combining
+    phytoremediation and mycoremediation to restore polluted Quebec lakes.
+    The FloteX product uses native plants and mycelium to naturally filter
+    nutrients, capture heavy metals, and rebuild aquatic biodiversity.
+  industry: "Clean Tech / Water Remediation"
+  stage: "pre-seed"
+  location: "Quebec City, QC, Canada"
+  founded_year: 2025
+  employees: 6
   website: "https://flotexa.ca/"
 
 eligibility:
   sectors:
     - "clean technology"
-    - "climate tech"
-    - "environmental technology"
-    - "sustainable development"
-    - "green energy"
+    - "water treatment"
+    - "water remediation"
+    - "phytoremediation"
+    - "environmental remediation"
+    - "biodiversity"
+    - "ecosystem restoration"
     - "circular economy"
+    - "nature-based solutions"
+    - "lake restoration"
+    - "freshwater"
+    - "aquatic ecosystem"
   activities:
     - "R&D"
     - "innovation"
-    - "commercialization"
     - "prototyping"
     - "pilot project"
+    - "demonstration"
+    - "commercialization"
     - "scale-up"
   certifications: []
 
 funding_prefs:
   min_amount: 10000
-  max_amount: 5000000
+  max_amount: 1000000
   types:
     - "grant"
     - "tax_credit"
     - "non-repayable"
-    - "loan"
+    - "contribution"
 
 keywords_boost:
   - "clean tech"
-  - "climate"
-  - "environment"
-  - "innovation"
+  - "water quality"
+  - "freshwater"
+  - "lake"
+  - "eutrophication"
+  - "phytoremediation"
+  - "biodiversity"
+  - "nature-based"
+  - "remediation"
   - "SME"
   - "startup"
   - "Quebec"
-  - "prototype"
+  - "innovation"
+  - "ecosystem restoration"
+  - "circular economy"
+  - "indigenous species"
+  - "wetland"
 
 keywords_avoid:
   - "large enterprise only"
   - "publicly traded"
   - "minimum 250 employees"
+  - "minimum revenue $10M"
+  - "oil and gas"
+  - "mining operations"
+  - "defense"
