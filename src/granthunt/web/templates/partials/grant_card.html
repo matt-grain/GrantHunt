@@ -9,7 +9,7 @@
             {% if grant.location %} &middot; {{ grant.location }}{% endif %}
         </p>
         {% if grant.deadline %}
-        <p class="text-xs text-amber-600 mt-0.5">Due: {{ grant.deadline.strftime('%b %d, %Y') }}</p>
+        <p class="text-xs text-amber-600 mt-0.5">Due: {{ grant.deadline }}</p>
         {% endif %}
     </div>
 

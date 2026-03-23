@@ -25,7 +25,7 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-500">
-                    {{ grant.deadline.strftime('%b %d, %Y') if grant.deadline else "-" }}
+                    {{ grant.deadline if grant.deadline else "-" }}
                 </td>
                 <td class="px-4 py-3">
                     {% if grant.score %}

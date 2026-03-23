@@ -24,7 +24,7 @@
                     <p class="font-medium text-sm">{{ grant.title }}</p>
                     <p class="text-xs text-gray-500">{{ grant.organization }}</p>
                     {% if grant.deadline %}
-                    <p class="text-xs text-amber-600 mt-1">Due: {{ grant.deadline.strftime('%b %d, %Y') }}</p>
+                    <p class="text-xs text-amber-600 mt-1">Due: {{ grant.deadline }}</p>
                     {% endif %}
                     {% if grant.score %}
                     <span class="score-badge {% if grant.score >= 80 %}score-high{% elif grant.score >= 60 %}score-mid{% else %}score-low{% endif %}">

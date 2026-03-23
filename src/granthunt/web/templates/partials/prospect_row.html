@@ -19,7 +19,7 @@
     <td class="px-4 py-3 text-gray-500 text-sm">{{ prospect.discovered_at.strftime('%Y-%m-%d') }}</td>
     <td class="px-4 py-3 text-gray-500 text-sm">
         {% if prospect.deadline %}
-        {{ prospect.deadline.strftime('%b %d, %Y') }}
+        {{ prospect.deadline }}
         {% else %}
         -
         {% endif %}
