@@ -18,8 +18,8 @@ class OrganizationResearch(BaseModel):
     website: str | None = None
     org_type: str | None = None  # "federal agency", "provincial", "foundation", etc.
     description: str | None = None
-    programs: list[str] = []          # Known grant programs
-    funding_signals: list[str] = []   # What they fund
+    programs: list[str] = []  # Known grant programs
+    funding_signals: list[str] = []  # What they fund
     application_tips: list[str] = []  # Tips for applying
 
 
@@ -128,7 +128,10 @@ def generate_application_tips(research: OrganizationResearch) -> list[str]:
         tips.append("Highlight Quebec job creation and local supply chain")
 
     # Signal-driven tips
-    if any("climate" in s or "ghg" in s or "decarbonization" in s or "net-zero" in s for s in signals_lower):
+    if any(
+        "climate" in s or "ghg" in s or "decarbonization" in s or "net-zero" in s
+        for s in signals_lower
+    ):
         tips.append("Quantify environmental impact and GHG reduction")
 
     # Generic best-practice tips always included

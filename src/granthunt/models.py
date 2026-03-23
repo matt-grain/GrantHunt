@@ -32,7 +32,7 @@ class Grant(BaseModel):
     score: float | None = None
     notes: str | None = None
     raw_description: str | None = None
-    deadline: datetime | None = None
+    deadline: str | None = None
     amount_min: float | None = None
     amount_max: float | None = None
     grant_type: str | None = None
@@ -47,7 +47,7 @@ class GrantCreate(BaseModel):
     program: str | None = None
     location: str | None = None
     notes: str | None = None
-    deadline: datetime | None = None
+    deadline: str | None = None
     amount_min: float | None = None
     amount_max: float | None = None
     grant_type: str | None = None
@@ -57,7 +57,7 @@ class GrantUpdate(BaseModel):
     status: GrantStatus | None = None
     score: float | None = None
     notes: str | None = None
-    deadline: datetime | None = None
+    deadline: str | None = None
 
 
 class GrantProspect(BaseModel):

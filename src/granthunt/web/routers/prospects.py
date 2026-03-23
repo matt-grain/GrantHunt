@@ -35,9 +35,9 @@ async def prospect_review(
     counts = count_prospects_by_status(conn)
 
     return templates.TemplateResponse(
+        request,
         "prospects.html",
         {
-            "request": request,
             "prospects": prospects,
             "pending_count": counts.get("PENDING", 0),
             "tracked_count": counts.get("TRACKED", 0),

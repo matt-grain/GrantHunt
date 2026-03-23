@@ -272,9 +272,7 @@ def keyword_score(description: str, profile: GrantProfile) -> tuple[float, list[
             boost_matches += 1
             highlights.append(f"Keyword match: '{keyword}'")
 
-    avoid_hits = sum(
-        1 for kw in profile.keywords_avoid if kw.lower() in desc_lower
-    )
+    avoid_hits = sum(1 for kw in profile.keywords_avoid if kw.lower() in desc_lower)
 
     if not profile.keywords_boost:
         boost_ratio = 1.0
@@ -288,9 +286,7 @@ def keyword_score(description: str, profile: GrantProfile) -> tuple[float, list[
     return round(score, 1), highlights
 
 
-def red_flag_score(
-    description: str, profile: GrantProfile
-) -> tuple[float, list[str]]:
+def red_flag_score(description: str, profile: GrantProfile) -> tuple[float, list[str]]:
     """Detect disqualifying signals in the grant description.
 
     Returns:

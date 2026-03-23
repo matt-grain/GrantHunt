@@ -1,4 +1,5 @@
 """Grant application materials generator - LOI, executive summary, eligibility checklist."""
+
 from __future__ import annotations
 
 import re
@@ -279,7 +280,8 @@ def generate_eligibility_checklist(grant: Grant, profile: GrantProfile) -> str:
     )
     is_sme = (startup.employees or 0) < 500 if startup.employees else None
     is_quebec = any(
-        kw in startup.location.lower() for kw in ("québec", "quebec", "montréal", "montreal")
+        kw in startup.location.lower()
+        for kw in ("québec", "quebec", "montréal", "montreal")
     )
     does_rd = any(
         act.lower() in ("r&d", "research", "development", "research and development")

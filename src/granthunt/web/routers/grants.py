@@ -23,7 +23,7 @@ TemplatesDep = Annotated[Jinja2Templates, Depends(get_templates)]
 async def add_grant_modal(request: Request) -> HTMLResponse:
     """Render the add-grant form (HTMX modal)."""
     templates = get_templates(request)
-    return templates.TemplateResponse("add_grant.html", {"request": request})
+    return templates.TemplateResponse(request, "add_grant.html")
 
 
 @router.post("/add", response_class=HTMLResponse)
@@ -74,9 +74,9 @@ async def grant_detail(
         return RedirectResponse("/", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "grant_detail.html",
         {
-            "request": request,
             "grant": grant,
             "statuses": list(GrantStatus),
         },
@@ -130,6 +130,7 @@ async def update_status(
         return RedirectResponse("/", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "partials/grant_card.html",
-        {"request": request, "grant": grant},
+        {"grant": grant},
     )

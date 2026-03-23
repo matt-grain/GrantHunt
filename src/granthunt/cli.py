@@ -79,22 +79,26 @@ def add(
     ] = None,
     grant_type: Annotated[
         str | None,
-        typer.Option("--grant-type", "-g", help="Grant type (e.g. R&D, Commercialization)"),
+        typer.Option(
+            "--grant-type", "-g", help="Grant type (e.g. R&D, Commercialization)"
+        ),
     ] = None,
     location: Annotated[
-        str | None, typer.Option("--location", "-l", help="Grant location/eligibility region")
+        str | None,
+        typer.Option("--location", "-l", help="Grant location/eligibility region"),
     ] = None,
     notes: Annotated[
         str | None, typer.Option("--notes", "-n", help="Notes about this grant")
     ] = None,
 ) -> None:
     """Add a new grant to the tracker."""
-    deadline_dt = None
     if deadline:
         try:
-            deadline_dt = datetime.strptime(deadline, "%Y-%m-%d")
+            datetime.strptime(deadline, "%Y-%m-%d")
         except ValueError:
-            console.print(f"[red]Invalid deadline format:[/red] {deadline} (expected YYYY-MM-DD)")
+            console.print(
+                f"[red]Invalid deadline format:[/red] {deadline} (expected YYYY-MM-DD)"
+            )
             raise typer.Exit(1)
 
     conn = init_db()
@@ -102,7 +106,7 @@ def add(
         url=url,
         title=title,
         organization=organization,
-        deadline=deadline_dt,
+        deadline=deadline,
         amount_min=amount_min,
         amount_max=amount_max,
         grant_type=grant_type,
@@ -173,7 +177,7 @@ def list_cmd(
         status_color = STATUS_COLORS.get(grant.status, "white")
         score_str = f"{grant.score:.1f}" if grant.score is not None else "-"
         date_str = grant.date_updated.strftime("%Y-%m-%d")
-        deadline_str = grant.deadline.strftime("%Y-%m-%d") if grant.deadline else "-"
+        deadline_str = grant.deadline if grant.deadline else "-"
 
         table.add_row(
             str(grant.id),
@@ -212,7 +216,7 @@ def show(grant_id: int) -> None:
 [bold]Organization:[/bold] {grant.organization}
 [bold]Grant Type:[/bold] {grant.grant_type or "Not specified"}
 [bold]Location:[/bold] {grant.location or "Not specified"}
-[bold]Deadline:[/bold] {grant.deadline.strftime("%Y-%m-%d") if grant.deadline else "Not specified"}
+[bold]Deadline:[/bold] {grant.deadline or "Not specified"}
 [bold]Amount Range:[/bold] {amount_str}
 [bold]Status:[/bold] [{status_color}]{grant.status.value}[/{status_color}]
 [bold]Score:[/bold] {grant.score if grant.score is not None else "Not scored"}
@@ -266,17 +270,18 @@ def update(
             conn.close()
             raise typer.Exit(1)
 
-    deadline_dt = None
     if deadline:
         try:
-            deadline_dt = datetime.strptime(deadline, "%Y-%m-%d")
+            datetime.strptime(deadline, "%Y-%m-%d")
         except ValueError:
-            console.print(f"[red]Invalid deadline format:[/red] {deadline} (expected YYYY-MM-DD)")
+            console.print(
+                f"[red]Invalid deadline format:[/red] {deadline} (expected YYYY-MM-DD)"
+            )
             conn.close()
             raise typer.Exit(1)
 
     grant_update = GrantUpdate(
-        status=status_enum, notes=notes, score=score, deadline=deadline_dt
+        status=status_enum, notes=notes, score=score, deadline=deadline
     )
     grant = update_grant(conn, grant_id, grant_update)
     conn.close()
@@ -383,22 +388,12 @@ def match(
     else:
         score_color = "red"
 
-    amount_parts = []
-    if grant_data.amount_min is not None:
-        amount_parts.append(f"${grant_data.amount_min:,.0f}")
-    if grant_data.amount_max is not None:
-        amount_parts.append(f"${grant_data.amount_max:,.0f}")
-    amount_str = " – ".join(amount_parts) if amount_parts else "Not specified"
-
-    deadline_str = (
-        grant_data.deadline.strftime("%Y-%m-%d")
-        if grant_data.deadline is not None
-        else "Not specified"
-    )
+    amount_str = grant_data.amount_range or "Not specified"
+    deadline_str = grant_data.deadline or "Not specified"
 
     content = f"""[bold]Title:[/bold] {grant_data.title}
 [bold]Organization:[/bold] {grant_data.organization}
-[bold]Grant Type:[/bold] {grant_data.grant_type or "Not specified"}
+[bold]Program:[/bold] {grant_data.program or "Not specified"}
 [bold]Deadline:[/bold] {deadline_str}
 [bold]Amount Range:[/bold] {amount_str}
 
@@ -434,11 +429,8 @@ def match(
             url=url,
             title=grant_data.title,
             organization=grant_data.organization,
-            location=grant_data.location,
-            grant_type=grant_data.grant_type,
+            program=grant_data.program,
             deadline=grant_data.deadline,
-            amount_min=grant_data.amount_min,
-            amount_max=grant_data.amount_max,
             notes=f"Score: {result.overall_score}/100 - {result.recommendation}",
         )
         grant = add_grant(conn, grant_create)
@@ -470,8 +462,7 @@ def research(grant_id: int) -> None:
 
     content = f"""[bold]Organization:[/bold] {result.name}
 [bold]Website:[/bold] {result.website or "Not found"}
-[bold]Industry:[/bold] {result.industry or "Unknown"}
-[bold]Size:[/bold] {result.size or "Unknown"}
+[bold]Type:[/bold] {result.org_type or "Unknown"}
 
 [bold]Description:[/bold]
 {result.description or "No description available"}"""
@@ -676,7 +667,9 @@ def dismiss_cmd(
 
     dismiss_prospect(conn, prospect_id)
     conn.close()
-    console.print(f"[dim]Dismissed:[/dim] {prospect.title} from {prospect.organization}")
+    console.print(
+        f"[dim]Dismissed:[/dim] {prospect.title} from {prospect.organization}"
+    )
 
 
 @app.command("review")
@@ -751,10 +744,12 @@ def add_prospect_cmd(
         str, typer.Option("--organization", "-o", help="Granting organization name")
     ],
     location: Annotated[
-        str | None, typer.Option("--location", "-l", help="Grant location/eligibility region")
+        str | None,
+        typer.Option("--location", "-l", help="Grant location/eligibility region"),
     ] = None,
     amount_range: Annotated[
-        str | None, typer.Option("--amount-range", help="Amount range (e.g. '$10K–$50K')")
+        str | None,
+        typer.Option("--amount-range", help="Amount range (e.g. '$10K–$50K')"),
     ] = None,
     score: Annotated[
         float | None, typer.Option("--score", "-s", help="Quick score (0-100)")

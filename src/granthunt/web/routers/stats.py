@@ -81,9 +81,9 @@ async def stats_dashboard(request: Request, conn: DBDep) -> HTMLResponse:
     response_rate = (responses / total_submitted * 100) if total_submitted > 0 else 0
 
     return templates.TemplateResponse(
+        request,
         "stats.html",
         {
-            "request": request,
             "status_counts": status_counts,
             "total_active": len(active_grants),
             "avg_score": round(avg_score, 1),

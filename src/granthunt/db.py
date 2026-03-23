@@ -381,7 +381,13 @@ def list_prospects(
         sort_by: Column to sort by (quick_score, discovered_at, title, organization).
         sort_dir: Sort direction (asc or desc).
     """
-    valid_columns = {"quick_score", "discovered_at", "title", "organization", "location"}
+    valid_columns = {
+        "quick_score",
+        "discovered_at",
+        "title",
+        "organization",
+        "location",
+    }
     if sort_by not in valid_columns:
         sort_by = "quick_score"
     sort_dir = "ASC" if sort_dir.lower() == "asc" else "DESC"
@@ -530,7 +536,9 @@ def record_scrape(
     conn.commit()
 
     return _row_to_scrape_history(
-        conn.execute("SELECT * FROM scrape_history WHERE id = ?", (cursor.lastrowid,)).fetchone()
+        conn.execute(
+            "SELECT * FROM scrape_history WHERE id = ?", (cursor.lastrowid,)
+        ).fetchone()
     )
 
 

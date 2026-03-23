@@ -55,7 +55,9 @@ def extract_deadline(text: str) -> str | None:
     and ISO / long-form date patterns.
     """
     # Rolling / open basis takes priority as a special case
-    if re.search(r"rolling\s+(?:basis|deadline|review|applications?)", text, re.IGNORECASE):
+    if re.search(
+        r"rolling\s+(?:basis|deadline|review|applications?)", text, re.IGNORECASE
+    ):
         return "Rolling"
 
     labelled_patterns = [
@@ -114,9 +116,9 @@ def extract_eligibility(soup: BeautifulSoup) -> str:
                 return clean_description(" ".join(parts))[:2000]
 
     # Fallback: element with a matching class or id attribute
-    candidate = soup.find(
-        class_=eligibility_keywords
-    ) or soup.find(id=eligibility_keywords)
+    candidate = soup.find(class_=eligibility_keywords) or soup.find(
+        id=eligibility_keywords
+    )
     if candidate:
         return clean_description(candidate.get_text(separator=" ", strip=True))[:2000]
 
@@ -131,14 +133,18 @@ def extract_organization(soup: BeautifulSoup) -> str:
     """
     og_site = soup.find("meta", {"property": "og:site_name"})
     if og_site and og_site.get("content"):
-        return og_site["content"].strip()
+        return str(og_site["content"]).strip()
 
-    meta_author = soup.find("meta", {"name": re.compile(r"author|publisher|organization", re.I)})
+    meta_author = soup.find(
+        "meta", {"name": re.compile(r"author|publisher|organization", re.I)}
+    )
     if meta_author and meta_author.get("content"):
-        return meta_author["content"].strip()
+        return str(meta_author["content"]).strip()
 
     # Look for an element whose class/id suggests it holds the org/site name
-    org_elem = soup.find(class_=re.compile(r"org|funder|agency|brand|logo-text|site-name", re.I))
+    org_elem = soup.find(
+        class_=re.compile(r"org|funder|agency|brand|logo-text|site-name", re.I)
+    )
     if org_elem:
         text = org_elem.get_text(strip=True)
         if text:

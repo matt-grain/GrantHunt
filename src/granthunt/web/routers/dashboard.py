@@ -39,9 +39,9 @@ async def pipeline_view(
     status_counts = {status: len(grants_by_status[status]) for status in GrantStatus}
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "grants_by_status": grants_by_status,
             "status_counts": status_counts,
         },
@@ -59,9 +59,9 @@ async def kanban_view(
     grants_by_status = _group_grants_by_status(grants)
 
     return templates.TemplateResponse(
+        request,
         "kanban.html",
         {
-            "request": request,
             "grants_by_status": grants_by_status,
         },
     )
