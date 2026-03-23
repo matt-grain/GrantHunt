@@ -1,0 +1,48 @@
+startup:
+  name: "Flotexa"
+  description: "Climate tech startup developing innovative solutions for environmental challenges"
+  industry: "Climate Tech"
+  stage: "seed"
+  location: "Quebec, Canada"
+  website: "https://flotexa.ca/"
+
+eligibility:
+  sectors:
+    - "clean technology"
+    - "climate tech"
+    - "environmental technology"
+    - "sustainable development"
+    - "green energy"
+    - "circular economy"
+  activities:
+    - "R&D"
+    - "innovation"
+    - "commercialization"
+    - "prototyping"
+    - "pilot project"
+    - "scale-up"
+  certifications: []
+
+funding_prefs:
+  min_amount: 10000
+  max_amount: 5000000
+  types:
+    - "grant"
+    - "tax_credit"
+    - "non-repayable"
+    - "loan"
+
+keywords_boost:
+  - "clean tech"
+  - "climate"
+  - "environment"
+  - "innovation"
+  - "SME"
+  - "startup"
+  - "Quebec"
+  - "prototype"
+
+keywords_avoid:
+  - "large enterprise only"
+  - "publicly traded"
+  - "minimum 250 employees"

@@ -1,0 +1,132 @@
+# Grant sources for Flotexa — organized by category
+# priority: 1 (highest) to 5 (lowest)
+
+sources:
+
+  # ── Federal (Canada-wide) ──────────────────────────────────────────────────
+
+  - id: innovation_canada
+    name: "Innovation Canada"
+    enabled: true
+    priority: 1
+    url: "https://innovation.canada.ca/"
+    category: "federal"
+    notes: >
+      Federal portal aggregating programs from NRC, ISED, and other agencies.
+      Good starting point for mapping all federal funding available to Canadian startups.
+
+  - id: irap
+    name: "NRC Industrial Research Assistance Program (IRAP)"
+    enabled: true
+    priority: 1
+    url: "https://nrc.canada.ca/en/support-technology-innovation/nrc-irap"
+    category: "federal"
+    notes: >
+      NRC's flagship SME program. Offers advisory services and financial support
+      for R&D and technology development. Highly relevant for seed-stage climate tech.
+
+  - id: sdtc
+    name: "Sustainable Development Technology Canada (SDTC)"
+    enabled: true
+    priority: 1
+    url: "https://www.sdtc.ca/"
+    category: "federal"
+    notes: >
+      Non-repayable contributions for pre-commercial clean technology projects.
+      Focused on energy, agriculture, environment. Strong match for Flotexa.
+
+  - id: sred
+    name: "Scientific Research and Experimental Development (SR&ED)"
+    enabled: true
+    priority: 2
+    url: "https://www.canada.ca/en/revenue-agency/services/scientific-research-experimental-development-tax-incentive-program.html"
+    category: "federal"
+    notes: >
+      Federal tax credit (refundable for CCPCs) covering eligible R&D expenditures.
+      Can be combined with provincial R&D credits. File annually with CRA.
+
+  - id: clean_growth_hub
+    name: "Clean Growth Hub"
+    enabled: true
+    priority: 2
+    url: "https://cleangrowthub.ca/"
+    category: "federal"
+    notes: >
+      Federal coordination hub for clean technology funding. Acts as a navigator
+      across NRCan, ISED, Agriculture Canada, and other federal programs.
+
+  - id: ecoaction
+    name: "EcoAction Community Funding Program"
+    enabled: true
+    priority: 3
+    url: "https://www.canada.ca/en/environment-climate-change/services/environmental-funding/ecoaction-community-program.html"
+    category: "federal"
+    notes: >
+      ECCC program supporting community-level environmental projects.
+      Better suited for pilot/demonstration phases with community partners.
+
+  # ── Quebec (Provincial) ───────────────────────────────────────────────────
+
+  - id: mei
+    name: "Ministere de l'Economie et de l'Innovation (MEI)"
+    enabled: true
+    priority: 1
+    url: "https://www.economie.gouv.qc.ca/en/"
+    category: "quebec"
+    notes: >
+      Quebec's primary ministry for economic development. Umbrella for many
+      provincial programs including support for innovative SMEs and startups.
+
+  - id: investissement_quebec
+    name: "Investissement Quebec"
+    enabled: true
+    priority: 1
+    url: "https://www.investissementquebec.com/en/"
+    category: "quebec"
+    notes: >
+      Quebec's development bank. Offers loans, loan guarantees, and equity
+      for innovative companies. Also administers some grant programs on behalf of MEI.
+
+  - id: pme_mtl
+    name: "PME MTL"
+    enabled: true
+    priority: 2
+    url: "https://www.pmemtl.com/"
+    category: "quebec"
+    notes: >
+      Montreal-area SME support network. Offers advisory services, micro-loans,
+      and referrals to other funding programs. Useful for early-stage Flotexa needs.
+
+  - id: erf
+    name: "Eco-responsible Fund (ERF) / Fonds vert"
+    enabled: true
+    priority: 2
+    url: "https://www.environnement.gouv.qc.ca/programmes/fonds-vert/"
+    category: "quebec"
+    notes: >
+      Quebec's green fund supporting projects aligned with the provincial climate
+      plan (Plan pour une economie verte). Relevant for pilot and scale-up stages.
+
+  # ── Climate & Sector-specific ─────────────────────────────────────────────
+
+  - id: mitacs
+    name: "Mitacs"
+    enabled: true
+    priority: 2
+    url: "https://www.mitacs.ca/"
+    category: "academic"
+    notes: >
+      Subsidizes hiring graduate students and postdocs for applied R&D projects.
+      Accelerate program provides ~$15k per intern (company co-funds ~$7.5k).
+      Excellent for building R&D capacity at seed stage.
+
+  - id: crsng
+    name: "NSERC / CRSNG Alliance Grants"
+    enabled: true
+    priority: 3
+    url: "https://www.nserc-crsng.gc.ca/Innovate-Innover/alliance-alliance/index_eng.asp"
+    category: "academic"
+    notes: >
+      Collaborative grants between industry and university researchers. Flotexa
+      must partner with a Canadian academic institution. Covers salaries, equipment,
+      and overhead. Requires matching cash or in-kind contribution from the company.
