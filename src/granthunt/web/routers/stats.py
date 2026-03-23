@@ -9,8 +9,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
-from jobhunt.db import list_jobs
-from jobhunt.models import JobStatus
+from granthunt.db import list_jobs
+from granthunt.models import JobStatus
 from ..dependencies import get_db, get_templates
 
 router = APIRouter(prefix="/stats", tags=["stats"])

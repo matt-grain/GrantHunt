@@ -13,7 +13,7 @@ from .routers import dashboard, jobs, prospects, stats
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application instance."""
-    app = FastAPI(title="JobHunt")
+    app = FastAPI(title="GrantHunt")
 
     base_path = Path(__file__).parent
 

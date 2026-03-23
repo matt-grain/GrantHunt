@@ -9,8 +9,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from jobhunt.db import list_jobs
-from jobhunt.models import Job, JobStatus
+from granthunt.db import list_jobs
+from granthunt.models import Job, JobStatus
 from ..dependencies import get_db, get_templates
 
 router = APIRouter()

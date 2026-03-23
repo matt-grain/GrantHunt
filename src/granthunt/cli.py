@@ -8,9 +8,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from jobhunt.config import load_profile
-from jobhunt.cover_letter import generate_cover_letter
-from jobhunt.db import (
+from granthunt.config import load_profile
+from granthunt.cover_letter import generate_cover_letter
+from granthunt.db import (
     add_job,
     add_prospect,
     count_prospects_by_status,
@@ -26,18 +26,18 @@ from jobhunt.db import (
     track_prospect,
     update_job,
 )
-from jobhunt.matcher import score_job
-from jobhunt.models import (
+from granthunt.matcher import score_job
+from granthunt.models import (
     JobCreate,
     JobStatus,
     JobUpdate,
     ProspectCreate,
     ProspectStatus,
 )
-from jobhunt.research import research_company
-from jobhunt.scraper import fetch_job_posting
+from granthunt.research import research_company
+from granthunt.scraper import fetch_job_posting
 
-app = typer.Typer(help="Job search automation CLI")
+app = typer.Typer(help="Grant search and application tracking CLI")
 console = Console()
 
 STATUS_COLORS = {

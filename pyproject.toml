@@ -1,7 +1,7 @@
 [project]
-name = "interviews"
+name = "granthunt"
 version = "0.1.0"
-description = "Job search automation and interview preparation"
+description = "Grant discovery and application tracking for startups"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-jobhunt = "jobhunt.cli:app"
+granthunt = "granthunt.cli:app"
 
 [dependency-groups]
 dev = [
@@ -35,4 +35,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/jobhunt"]
+packages = ["src/granthunt"]

@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from jobhunt.config import JobProfile, load_profile
-from jobhunt.models import Job
+from granthunt.config import JobProfile, load_profile
+from granthunt.models import Job
 
 
 def load_research(research_path: Path) -> dict[str, str]:

@@ -8,13 +8,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
-from jobhunt.db import (
+from granthunt.db import (
     count_prospects_by_status,
     dismiss_prospect,
     list_prospects,
     track_prospect,
 )
-from jobhunt.models import ProspectStatus
+from granthunt.models import ProspectStatus
 from ..dependencies import get_db, get_templates
 
 router = APIRouter(prefix="/prospects", tags=["prospects"])

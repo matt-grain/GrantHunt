@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from jobhunt.db import add_job, delete_job, get_job, update_job
-from jobhunt.models import JobCreate, JobStatus, JobUpdate
+from granthunt.db import add_job, delete_job, get_job, update_job
+from granthunt.models import JobCreate, JobStatus, JobUpdate
 from ..dependencies import get_db, get_templates
 
 router = APIRouter()

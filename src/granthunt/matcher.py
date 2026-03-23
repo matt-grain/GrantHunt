@@ -6,8 +6,8 @@ import re
 
 from pydantic import BaseModel
 
-from jobhunt.config import JobProfile
-from jobhunt.scraper import JobPostingData
+from granthunt.config import JobProfile
+from granthunt.scraper import JobPostingData
 
 
 class MatchResult(BaseModel):

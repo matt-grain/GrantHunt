@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Generator
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
-from jobhunt.db import init_db
+from granthunt.db import init_db
 
 if TYPE_CHECKING:
     pass

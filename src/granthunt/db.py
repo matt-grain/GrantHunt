@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from jobhunt.models import (
+from granthunt.models import (
     Job,
     JobCreate,
     JobProspect,
