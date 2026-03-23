@@ -1,4 +1,4 @@
-"""Job matching engine - score jobs against user profile."""
+"""Grant matching engine - score grants against startup profile."""
 
 from __future__ import annotations
 
@@ -6,40 +6,75 @@ import re
 
 from pydantic import BaseModel
 
-from granthunt.config import JobProfile
-from granthunt.scraper import JobPostingData
+from granthunt.config import GrantProfile
+from granthunt.scraper import GrantPostingData
 
 
 class MatchResult(BaseModel):
-    """Result of matching a job against profile."""
+    """Result of matching a grant against profile."""
 
     overall_score: float  # 0-100
     breakdown: dict[str, float]  # Per-category scores (0-100)
-    red_flags: list[str]  # Detected anti-patterns
+    red_flags: list[str]  # Detected disqualifying signals
     highlights: list[str]  # Positive matches
     recommendation: str  # "Strong match", "Worth reviewing", "Likely skip"
 
 
-# Role title variations for fuzzy matching
-ROLE_VARIATIONS: dict[str, list[str]] = {
-    "cto": ["chief technology officer", "chief tech officer", "cto"],
-    "vp engineering": [
-        "vp of engineering",
-        "vice president engineering",
-        "vp eng",
-        "head of engineering",
+# Sector synonym groups for fuzzy matching against grant descriptions
+SECTOR_VARIATIONS: dict[str, list[str]] = {
+    "clean tech": ["cleantech", "clean technology", "green tech", "greentech"],
+    "climate": [
+        "climate change",
+        "decarbonization",
+        "emissions reduction",
+        "ghg",
+        "greenhouse gas",
+        "net zero",
+        "carbon neutral",
     ],
-    "technical lead": [
-        "tech lead",
-        "engineering lead",
-        "lead engineer",
-        "principal engineer",
+    "energy": [
+        "renewable energy",
+        "clean energy",
+        "solar",
+        "wind energy",
+        "energy storage",
+        "energy efficiency",
+        "energy transition",
     ],
-    "architect": [
-        "software architect",
-        "solutions architect",
-        "system architect",
-        "principal architect",
+    "agriculture": [
+        "agri-food",
+        "agrifood",
+        "agtech",
+        "ag tech",
+        "sustainable agriculture",
+        "precision agriculture",
+    ],
+    "transportation": [
+        "electric vehicles",
+        "ev",
+        "sustainable mobility",
+        "clean transportation",
+        "electrification",
+    ],
+    "waste": [
+        "circular economy",
+        "waste management",
+        "recycling",
+        "zero waste",
+        "biomass",
+        "bioeconomy",
+    ],
+    "water": [
+        "water management",
+        "water treatment",
+        "water conservation",
+        "hydrology",
+    ],
+    "biodiversity": [
+        "nature-based solutions",
+        "ecosystem",
+        "conservation",
+        "habitat restoration",
     ],
 }
 
@@ -49,144 +84,254 @@ def normalize_text(text: str) -> str:
     return re.sub(r"[^\w\s]", " ", text.lower())
 
 
-def role_score(title: str, profile: JobProfile) -> tuple[float, list[str]]:
-    """Score how well the job title matches target roles.
+def sector_score(description: str, profile: GrantProfile) -> tuple[float, list[str]]:
+    """Score how well the grant's sector coverage matches the startup's sectors.
 
     Returns:
-        Tuple of (score 0-100, list of matched roles)
+        Tuple of (score 0-100, list of matched sector highlights)
     """
-    title_lower = normalize_text(title)
+    desc_lower = normalize_text(description)
     highlights: list[str] = []
 
-    for role in profile.target_roles:
-        role_lower = role.lower()
-        if role_lower in title_lower:
-            highlights.append(f"Title matches '{role}'")
+    for sector in profile.eligibility.sectors:
+        sector_lower = sector.lower()
+
+        # Exact sector mention
+        if sector_lower in desc_lower:
+            highlights.append(f"Sector match: '{sector}'")
             return 100.0, highlights
 
-        for base, variations in ROLE_VARIATIONS.items():
-            if base in role_lower:
-                for var in variations:
-                    if var in title_lower:
-                        highlights.append(f"Title matches '{role}' (via '{var}')")
-                        return 90.0, highlights
+        # Check via synonym groups
+        for base, variations in SECTOR_VARIATIONS.items():
+            if base in sector_lower or sector_lower in base:
+                for variant in variations:
+                    if variant in desc_lower:
+                        highlights.append(f"Sector match: '{sector}' (via '{variant}')")
+                        return 100.0, highlights
+                # Base key itself may appear in description
+                if base in desc_lower:
+                    highlights.append(f"Sector match: '{sector}' (via '{base}')")
+                    return 100.0, highlights
 
-    leadership_keywords = [
-        "director",
-        "head of",
-        "lead",
-        "senior",
-        "principal",
-        "chief",
-        "vp",
-        "manager",
-    ]
-    for kw in leadership_keywords:
-        if kw in title_lower:
-            highlights.append(f"Leadership role: '{kw}'")
-            return 50.0, highlights
+        # Check if any synonym group partially overlaps with the sector term
+        for base, variations in SECTOR_VARIATIONS.items():
+            for variant in variations:
+                if variant in desc_lower:
+                    highlights.append(f"Related sector: '{variant}'")
+                    return 50.0, highlights
 
     return 20.0, []
 
 
-def keyword_score(description: str, profile: JobProfile) -> tuple[float, list[str]]:
-    """Score based on tech keywords match.
+def eligibility_score(
+    description: str, profile: GrantProfile
+) -> tuple[float, list[str]]:
+    """Score based on how many eligibility criteria the grant matches.
+
+    Checks for activity alignment (R&D, innovation, etc.), SME/startup mentions,
+    and Quebec/Canada regional eligibility.
 
     Returns:
-        Tuple of (score 0-100, list of matched keywords)
+        Tuple of (score 0-100, list of matched eligibility highlights)
     """
     desc_lower = normalize_text(description)
     highlights: list[str] = []
-    must_have_matches = 0
-    nice_to_have_matches = 0
+    criteria_met = 0
+    criteria_total = 0
 
-    for keyword in profile.tech_focus.must_have:
-        if keyword.lower() in desc_lower:
-            must_have_matches += 1
-            highlights.append(f"Has '{keyword}'")
+    # Activity matching
+    for activity in profile.eligibility.activities:
+        criteria_total += 1
+        activity_lower = activity.lower()
+        if activity_lower in desc_lower:
+            criteria_met += 1
+            highlights.append(f"Activity eligible: '{activity}'")
 
-    for keyword in profile.tech_focus.nice_to_have:
-        if keyword.lower() in desc_lower:
-            nice_to_have_matches += 1
+    # SME / startup eligibility signals (always checked)
+    sme_signals = [
+        ("sme", "Eligible for SMEs"),
+        ("small and medium", "Eligible for SMEs"),
+        ("startup", "Eligible for startups"),
+        ("start-up", "Eligible for startups"),
+        ("early-stage", "Eligible for early-stage companies"),
+        ("early stage", "Eligible for early-stage companies"),
+    ]
+    criteria_total += 1
+    for signal, message in sme_signals:
+        if signal in desc_lower:
+            criteria_met += 1
+            highlights.append(message)
+            break
 
-    for keyword in profile.keywords_boost:
-        if keyword.lower() in desc_lower:
-            highlights.append(f"Mentions '{keyword}'")
+    # Regional eligibility: Quebec / Canada
+    regional_signals = [
+        ("quebec", "Quebec-eligible"),
+        ("québec", "Quebec-eligible"),
+        ("canada", "Canada-eligible"),
+        ("canadian", "Canada-eligible"),
+    ]
+    criteria_total += 1
+    for signal, message in regional_signals:
+        if signal in desc_lower:
+            criteria_met += 1
+            highlights.append(message)
+            break
 
-    must_have_ratio = must_have_matches / max(len(profile.tech_focus.must_have), 1)
-    nice_to_have_ratio = nice_to_have_matches / max(
-        len(profile.tech_focus.nice_to_have), 1
-    )
+    # Certification bonus (if profile lists certifications like ISO, B-Corp, etc.)
+    for cert in profile.eligibility.certifications:
+        criteria_total += 1
+        if cert.lower() in desc_lower:
+            criteria_met += 1
+            highlights.append(f"Certification recognized: '{cert}'")
 
-    score = (must_have_ratio * 70) + (nice_to_have_ratio * 30)
+    if criteria_total == 0:
+        return 50.0, highlights
+
+    score = (criteria_met / criteria_total) * 100
+    return round(score, 1), highlights
+
+
+def funding_fit_score(
+    description: str, amount_range: str | None, profile: GrantProfile
+) -> tuple[float, list[str]]:
+    """Score based on funding amount and grant type alignment.
+
+    Returns:
+        Tuple of (score 0-100, list of funding fit highlights)
+    """
+    desc_lower = normalize_text(description)
+    highlights: list[str] = []
+    score = 50.0  # Default: unknown, neutral
+
+    # Grant type matching
+    if profile.funding_prefs.types:
+        type_signals: dict[str, list[str]] = {
+            "grant": ["grant", "contribution", "non-repayable", "subsidy"],
+            "tax_credit": ["tax credit", "sr&ed", "sred", "cctb", "tax incentive"],
+            "loan": ["loan", "repayable", "interest-free loan", "financing"],
+            "equity": ["equity", "investment", "venture", "co-investment"],
+        }
+        for pref_type in profile.funding_prefs.types:
+            signals = type_signals.get(pref_type.lower(), [pref_type.lower()])
+            for signal in signals:
+                if signal in desc_lower:
+                    highlights.append(f"Grant type match: '{pref_type}'")
+                    score = max(score, 70.0)
+                    break
+
+    # Amount range check — parse first number found in amount_range string
+    if amount_range:
+        amount_lower = normalize_text(amount_range)
+        # Extract leading numeric value (handles "$500,000", "500 000", etc.)
+        match = re.search(r"[\d]+(?:[,\s][\d]+)*", amount_lower)
+        if match:
+            raw = re.sub(r"[,\s]", "", match.group())
+            try:
+                amount = float(raw)
+                min_ok = (
+                    profile.funding_prefs.min_amount is None
+                    or amount >= profile.funding_prefs.min_amount
+                )
+                max_ok = (
+                    profile.funding_prefs.max_amount is None
+                    or amount <= profile.funding_prefs.max_amount
+                )
+                if min_ok and max_ok:
+                    highlights.append(f"Amount within target range: {amount_range}")
+                    score = 100.0
+                else:
+                    score = 0.0
+                    if not min_ok:
+                        highlights.append(
+                            f"Amount {amount_range} below minimum"
+                            f" ${profile.funding_prefs.min_amount:,.0f}"
+                        )
+                    if not max_ok:
+                        highlights.append(
+                            f"Amount {amount_range} above maximum"
+                            f" ${profile.funding_prefs.max_amount:,.0f}"
+                        )
+            except ValueError:
+                pass  # Unparseable amount — leave score neutral
 
     return score, highlights
 
 
-def industry_score(
-    description: str, company: str, profile: JobProfile
-) -> tuple[float, list[str]]:
-    """Score based on industry match.
+def keyword_score(description: str, profile: GrantProfile) -> tuple[float, list[str]]:
+    """Score based on boost/avoid keyword matches in the grant description.
 
     Returns:
-        Tuple of (score 0-100, list of industry signals)
+        Tuple of (score 0-100, list of matched keyword highlights)
     """
-    text_lower = normalize_text(description + " " + company)
+    desc_lower = normalize_text(description)
     highlights: list[str] = []
+    boost_matches = 0
 
-    for industry in profile.industries.preferred:
-        if industry.lower() in text_lower:
-            highlights.append(f"Industry: {industry}")
-            return 100.0, highlights
+    for keyword in profile.keywords_boost:
+        if keyword.lower() in desc_lower:
+            boost_matches += 1
+            highlights.append(f"Keyword match: '{keyword}'")
 
-    for industry in profile.industries.avoid:
-        if industry.lower() in text_lower:
-            return 0.0, [f"Industry to avoid: {industry}"]
+    avoid_hits = sum(
+        1 for kw in profile.keywords_avoid if kw.lower() in desc_lower
+    )
 
-    return 50.0, []
+    if not profile.keywords_boost:
+        boost_ratio = 1.0
+    else:
+        boost_ratio = boost_matches / len(profile.keywords_boost)
+
+    # Boost keywords drive score up; avoid keywords pull it down
+    score = boost_ratio * 100
+    score = max(0.0, score - avoid_hits * 15)
+
+    return round(score, 1), highlights
 
 
-def red_flag_score(description: str, profile: JobProfile) -> tuple[float, list[str]]:
-    """Detect anti-patterns in job posting.
+def red_flag_score(
+    description: str, profile: GrantProfile
+) -> tuple[float, list[str]]:
+    """Detect disqualifying signals in the grant description.
 
     Returns:
-        Tuple of (score 0-100 where higher is better/fewer red flags, list of red flags)
+        Tuple of (score 0-100 where higher means fewer red flags, list of red flags)
     """
     desc_lower = normalize_text(description)
     red_flags: list[str] = []
-
-    for pattern in profile.anti_patterns:
-        if pattern.lower() in desc_lower:
-            red_flags.append(f"Anti-pattern: '{pattern}'")
 
     for keyword in profile.keywords_avoid:
         if keyword.lower() in desc_lower:
             red_flags.append(f"Avoid keyword: '{keyword}'")
 
     common_red_flags = [
-        ("rockstar", "Uses 'rockstar' language"),
-        ("ninja", "Uses 'ninja' language"),
-        ("fast-paced environment", "May indicate poor work-life balance"),
-        ("wear many hats", "May lack focus/resources"),
-        ("unlimited pto", "Often means less PTO in practice"),
+        ("large enterprise only", "Restricted to large enterprises"),
+        ("minimum revenue 10", "Requires minimum $10M revenue"),
+        ("minimum revenue of 10", "Requires minimum $10M revenue"),
+        ("publicly traded", "Restricted to publicly traded companies"),
+        ("250 employees", "Requires 250+ employees"),
+        ("500 employees", "Requires 500+ employees"),
+        ("must have 250", "Requires 250+ employees"),
+        ("not eligible.*startup", "Startups explicitly excluded"),
+        ("for-profit only", "Excludes non-profits (verify fit)"),
+        ("canadian citizens only", "May exclude incorporated entities"),
     ]
 
     for trigger, message in common_red_flags:
-        if trigger in desc_lower:
+        if re.search(trigger, desc_lower):
             red_flags.append(message)
 
     penalty_per_flag = 15
-    score = max(0, 100 - len(red_flags) * penalty_per_flag)
+    score = max(0.0, 100.0 - len(red_flags) * penalty_per_flag)
 
     return score, red_flags
 
 
-def score_job(job_data: JobPostingData, profile: JobProfile) -> MatchResult:
-    """Score a job posting against the user's profile.
+def score_grant(grant_data: GrantPostingData, profile: GrantProfile) -> MatchResult:
+    """Score a grant posting against the startup's profile.
 
     Args:
-        job_data: Scraped job posting data
-        profile: User's job search profile
+        grant_data: Scraped grant posting data
+        profile: Startup's grant search profile
 
     Returns:
         Match result with overall score and breakdown
@@ -194,34 +339,47 @@ def score_job(job_data: JobPostingData, profile: JobProfile) -> MatchResult:
     all_highlights: list[str] = []
     all_red_flags: list[str] = []
 
-    role_sc, role_hl = role_score(job_data.title, profile)
-    all_highlights.extend(role_hl)
+    full_text = " ".join(
+        filter(
+            None,
+            [
+                grant_data.description,
+                grant_data.eligibility_text,
+                grant_data.program,
+            ],
+        )
+    )
 
-    keyword_sc, keyword_hl = keyword_score(job_data.description, profile)
+    sector_sc, sector_hl = sector_score(full_text, profile)
+    all_highlights.extend(sector_hl)
+
+    eligibility_sc, eligibility_hl = eligibility_score(full_text, profile)
+    all_highlights.extend(eligibility_hl)
+
+    funding_sc, funding_hl = funding_fit_score(
+        full_text, grant_data.amount_range, profile
+    )
+    all_highlights.extend(funding_hl)
+
+    keyword_sc, keyword_hl = keyword_score(full_text, profile)
     all_highlights.extend(keyword_hl)
 
-    industry_sc, industry_hl = industry_score(
-        job_data.description, job_data.company, profile
-    )
-    if industry_sc == 0:
-        all_red_flags.extend(industry_hl)
-    else:
-        all_highlights.extend(industry_hl)
-
-    redflag_sc, redflag_list = red_flag_score(job_data.description, profile)
+    redflag_sc, redflag_list = red_flag_score(full_text, profile)
     all_red_flags.extend(redflag_list)
 
     weights = {
-        "role": 0.30,
-        "keywords": 0.25,
-        "industry": 0.20,
-        "red_flags": 0.25,
+        "sector": 0.30,
+        "eligibility": 0.25,
+        "funding_fit": 0.20,
+        "keywords": 0.15,
+        "red_flags": 0.10,
     }
 
     overall = (
-        role_sc * weights["role"]
+        sector_sc * weights["sector"]
+        + eligibility_sc * weights["eligibility"]
+        + funding_sc * weights["funding_fit"]
         + keyword_sc * weights["keywords"]
-        + industry_sc * weights["industry"]
         + redflag_sc * weights["red_flags"]
     )
 
@@ -235,9 +393,10 @@ def score_job(job_data: JobPostingData, profile: JobProfile) -> MatchResult:
     return MatchResult(
         overall_score=round(overall, 1),
         breakdown={
-            "Role match": round(role_sc, 1),
-            "Tech keywords": round(keyword_sc, 1),
-            "Industry": round(industry_sc, 1),
+            "Sector match": round(sector_sc, 1),
+            "Eligibility": round(eligibility_sc, 1),
+            "Funding fit": round(funding_sc, 1),
+            "Keywords": round(keyword_sc, 1),
             "Red flags": round(redflag_sc, 1),
         },
         red_flags=all_red_flags[:5],

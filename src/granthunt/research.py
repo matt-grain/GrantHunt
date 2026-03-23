@@ -1,4 +1,4 @@
-"""Company research module - gather information about potential employers."""
+"""Organization research module - gather information about funding organizations."""
 
 from __future__ import annotations
 
@@ -11,163 +11,144 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 
-class CompanyResearch(BaseModel):
-    """Research data about a company."""
+class OrganizationResearch(BaseModel):
+    """Research data about a funding organization."""
 
     name: str
     website: str | None = None
-    industry: str | None = None
-    size: str | None = None
+    org_type: str | None = None  # "federal agency", "provincial", "foundation", etc.
     description: str | None = None
-    tech_stack: list[str] = []
-    culture_signals: list[str] = []
-    interview_prep: list[str] = []  # Suggested questions to ask
+    programs: list[str] = []          # Known grant programs
+    funding_signals: list[str] = []   # What they fund
+    application_tips: list[str] = []  # Tips for applying
 
 
 # Cache directory for research results
-CACHE_DIR = Path.cwd() / ".jobhunt_cache"
+CACHE_DIR = Path.cwd() / ".granthunt_cache"
 
 
-def get_cache_path(company_name: str) -> Path:
-    """Get cache file path for a company."""
-    safe_name = re.sub(r"[^\w\s-]", "", company_name.lower()).replace(" ", "_")
+def get_cache_path(org_name: str) -> Path:
+    """Get cache file path for an organization."""
+    safe_name = re.sub(r"[^\w\s-]", "", org_name.lower()).replace(" ", "_")
     return CACHE_DIR / f"{safe_name}.json"
 
 
-def load_cached_research(company_name: str) -> CompanyResearch | None:
+def load_cached_research(org_name: str) -> OrganizationResearch | None:
     """Load cached research if available."""
-    cache_path = get_cache_path(company_name)
+    cache_path = get_cache_path(org_name)
     if cache_path.exists():
         try:
             data = json.loads(cache_path.read_text())
-            return CompanyResearch.model_validate(data)
+            return OrganizationResearch.model_validate(data)
         except Exception:
             return None
     return None
 
 
-def save_cached_research(research: CompanyResearch) -> None:
+def save_cached_research(research: OrganizationResearch) -> None:
     """Save research to cache."""
     CACHE_DIR.mkdir(exist_ok=True)
     cache_path = get_cache_path(research.name)
     cache_path.write_text(research.model_dump_json(indent=2))
 
 
-def extract_tech_stack(text: str) -> list[str]:
-    """Extract technology mentions from text."""
-    tech_keywords = [
-        "Python",
-        "JavaScript",
-        "TypeScript",
-        "React",
-        "Node.js",
-        "AWS",
-        "Azure",
-        "GCP",
-        "Kubernetes",
-        "Docker",
-        "PostgreSQL",
-        "MongoDB",
-        "Redis",
-        "GraphQL",
-        "REST API",
-        "Microservices",
-        "Machine Learning",
-        "AI",
-        "LLM",
-        "FastAPI",
-        "Django",
-        "Flask",
-        "Next.js",
-        "Vue",
-        "Angular",
-        "Go",
-        "Rust",
-        "Java",
-        "C#",
-        ".NET",
-        "Terraform",
-        "CI/CD",
-        "GitHub Actions",
-        "Jenkins",
+def extract_programs(text: str) -> list[str]:
+    """Extract grant program names and funding streams from website text."""
+    program_keywords = [
+        "Program",
+        "Fund",
+        "Grant",
+        "Initiative",
+        "Stream",
+        "Funding",
+        "Contribution",
+        "Investment",
+        "Challenge",
+        "Competition",
+        "Accelerator",
+        "Incubator",
+        "Voucher",
+        "Subsidy",
+        "Bursary",
+        "Fellowship",
+        "Award",
     ]
     found = []
     text_lower = text.lower()
-    for tech in tech_keywords:
-        if tech.lower() in text_lower:
-            found.append(tech)
+    for keyword in program_keywords:
+        if keyword.lower() in text_lower:
+            found.append(keyword)
     return list(set(found))[:10]  # Dedupe and limit
 
 
-def extract_culture_signals(text: str) -> list[str]:
-    """Extract culture-related signals from text."""
+def extract_funding_signals(text: str) -> list[str]:
+    """Extract signals about what the organization funds."""
     signals = []
     text_lower = text.lower()
 
-    culture_patterns = [
-        ("remote", "Offers remote work"),
-        ("hybrid", "Hybrid work model"),
-        ("flexible", "Flexible work arrangements"),
-        ("diversity", "Values diversity & inclusion"),
-        ("equity", "Focus on equity"),
-        ("work-life balance", "Emphasizes work-life balance"),
-        ("learning", "Learning & development opportunities"),
-        ("growth", "Career growth focus"),
-        ("startup", "Startup environment"),
-        ("enterprise", "Enterprise scale"),
-        ("agile", "Agile methodology"),
-        ("innovation", "Innovation-focused"),
+    funding_patterns = [
+        ("clean tech", "Funds clean technology"),
+        ("cleantech", "Funds clean technology"),
+        ("sme", "Targets SMEs"),
+        ("small and medium", "Targets SMEs"),
+        ("innovation", "Innovation-focused funding"),
+        ("r&d", "Supports R&D activities"),
+        ("research and development", "Supports R&D activities"),
+        ("quebec", "Quebec-specific funding"),
+        ("climate", "Climate-focused mandate"),
+        ("startup", "Supports startups"),
+        ("commercialization", "Supports commercialization"),
+        ("prototype", "Funds prototyping"),
+        ("greenhouse gas", "GHG reduction focus"),
+        ("ghg", "GHG reduction focus"),
+        ("decarbonization", "Decarbonization mandate"),
+        ("net zero", "Net-zero aligned"),
+        ("renewable", "Renewable energy focus"),
+        ("export", "Export development support"),
     ]
 
-    for keyword, signal in culture_patterns:
+    for keyword, signal in funding_patterns:
         if keyword in text_lower and signal not in signals:
             signals.append(signal)
 
     return signals[:6]  # Limit
 
 
-def generate_interview_questions(research: CompanyResearch) -> list[str]:
-    """Generate interview questions based on research."""
-    questions = []
+def generate_application_tips(research: OrganizationResearch) -> list[str]:
+    """Generate application tips based on organization type and funding signals."""
+    tips = []
 
-    # Tech stack questions
-    if research.tech_stack:
-        tech_list = ", ".join(research.tech_stack[:3])
-        questions.append(
-            f"I saw you use {tech_list}. How does your team approach architecture decisions?"
-        )
+    org_type_lower = (research.org_type or "").lower()
+    signals_lower = [s.lower() for s in research.funding_signals]
 
-    # Culture questions
-    if "Offers remote work" in research.culture_signals:
-        questions.append(
-            "How does the team stay connected and collaborate in a remote/hybrid setting?"
-        )
+    # Org-type-specific tips
+    if "federal" in org_type_lower:
+        tips.append("Emphasize innovation and economic impact")
+    elif "provincial" in org_type_lower or "quebec" in org_type_lower:
+        tips.append("Highlight Quebec job creation and local supply chain")
 
-    if "Startup environment" in research.culture_signals:
-        questions.append(
-            "What's the current stage of the company and runway situation?"
-        )
+    # Signal-driven tips
+    if any("climate" in s or "ghg" in s or "decarbonization" in s or "net-zero" in s for s in signals_lower):
+        tips.append("Quantify environmental impact and GHG reduction")
 
-    # Generic good questions
-    questions.extend(
+    # Generic best-practice tips always included
+    tips.extend(
         [
-            "What does success look like in this role after 90 days?",
-            "What are the biggest technical challenges the team is facing?",
-            "How do you approach technical debt vs. new feature development?",
-            "What's the team structure and who would I be working with closely?",
+            "Demonstrate clear milestones and deliverables",
+            "Show co-funding or matching funds",
+            "Provide letters of support from partners",
         ]
     )
 
-    return questions[:5]  # Top 5
+    return tips[:5]  # Top 5
 
 
-async def fetch_company_website(company_name: str) -> dict[str, str | None]:
-    """Try to fetch company website and extract info."""
-    # Search for company website (simplified - just construct common patterns)
+async def fetch_org_website(org_name: str) -> dict[str, str | None]:
+    """Try to fetch organization website and extract info."""
     possible_urls = [
-        f"https://www.{company_name.lower().replace(' ', '')}.com",
-        f"https://{company_name.lower().replace(' ', '')}.com",
-        f"https://www.{company_name.lower().replace(' ', '-')}.com",
+        f"https://www.{org_name.lower().replace(' ', '')}.com",
+        f"https://{org_name.lower().replace(' ', '')}.com",
+        f"https://www.{org_name.lower().replace(' ', '-')}.com",
     ]
 
     headers = {
@@ -203,41 +184,41 @@ async def fetch_company_website(company_name: str) -> dict[str, str | None]:
     return {}
 
 
-async def research_company(
-    company_name: str, use_cache: bool = True
-) -> CompanyResearch:
-    """Research a company and gather available information.
+async def research_organization(
+    org_name: str, use_cache: bool = True
+) -> OrganizationResearch:
+    """Research a funding organization and gather available information.
 
     Args:
-        company_name: Name of the company to research
+        org_name: Name of the organization to research
         use_cache: Whether to use cached results
 
     Returns:
-        CompanyResearch with gathered information
+        OrganizationResearch with gathered information
     """
     # Check cache first
     if use_cache:
-        cached = load_cached_research(company_name)
+        cached = load_cached_research(org_name)
         if cached:
             return cached
 
-    research = CompanyResearch(name=company_name)
+    research = OrganizationResearch(name=org_name)
 
-    # Try to fetch company website
+    # Try to fetch organization website
     try:
-        website_data = await fetch_company_website(company_name)
+        website_data = await fetch_org_website(org_name)
         if website_data:
             research.website = website_data.get("website")
             research.description = website_data.get("description")
 
             text = website_data.get("text", "") or ""
-            research.tech_stack = extract_tech_stack(text)
-            research.culture_signals = extract_culture_signals(text)
+            research.programs = extract_programs(text)
+            research.funding_signals = extract_funding_signals(text)
     except Exception:
         pass  # Continue without website data
 
-    # Generate interview questions
-    research.interview_prep = generate_interview_questions(research)
+    # Generate application tips
+    research.application_tips = generate_application_tips(research)
 
     # Cache the result
     save_cached_research(research)
