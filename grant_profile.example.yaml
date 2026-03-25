@@ -1,0 +1,55 @@
+# Grant Search Profile - Example Configuration
+# Copy this file to grant_profile.yaml and customize for your startup
+
+startup:
+  name: "Your Startup Name"
+  description: >
+    Brief description of what your startup does, your technology,
+    and the problem you're solving. This is used for grant matching
+    and LOI generation.
+  industry: "Clean Tech / Your Sector"
+  stage: "pre-seed"  # pre-seed, seed, series-a, growth
+  location: "City, Province, Country"
+  founded_year: 2025
+  employees: 5
+  website: "https://yourstartup.com/"
+
+# What sectors/activities you're eligible for
+eligibility:
+  sectors:
+    - "clean technology"
+    - "your industry"
+    - "related sectors"
+  activities:
+    - "R&D"
+    - "innovation"
+    - "prototyping"
+    - "pilot project"
+    - "commercialization"
+  certifications: []  # Any certifications you hold
+
+# Funding preferences
+funding_prefs:
+  min_amount: 10000
+  max_amount: 500000
+  types:
+    - "grant"
+    - "tax_credit"
+    - "non-repayable"
+    - "contribution"
+
+# Keywords that boost a grant's relevance score
+keywords_boost:
+  - "your technology"
+  - "your sector"
+  - "SME"
+  - "startup"
+  - "innovation"
+  - "your region"
+
+# Keywords that indicate a grant isn't for you
+keywords_avoid:
+  - "large enterprise only"
+  - "publicly traded"
+  - "minimum 250 employees"
+  - "minimum revenue $10M"

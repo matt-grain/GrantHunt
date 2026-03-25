@@ -1,0 +1,107 @@
+# Grant Sources Configuration - Example
+# Copy this file to grant_sources.yaml and customize for your region/sector
+#
+# Each source has priority 1 (highest) to 5 (lowest)
+# Organize by category: federal, provincial/state, academic, ecosystem
+
+sources:
+
+  # -- Federal (Country-wide) --
+
+  - id: innovation_portal
+    name: "Innovation Portal"
+    enabled: true
+    priority: 1
+    url: "https://your-country-innovation-portal.gov/"
+    category: "federal"
+    notes: >
+      Federal portal aggregating grant programs from multiple agencies.
+      Good starting point for mapping all federal funding.
+
+  - id: rd_tax_credit
+    name: "R&D Tax Credit Program"
+    enabled: true
+    priority: 1
+    url: "https://revenue-agency.gov/rd-credits"
+    category: "federal"
+    notes: >
+      Refundable tax credit for R&D activities. File annually after
+      fiscal year. Document experimental development carefully.
+
+  - id: clean_tech_fund
+    name: "Clean Technology Fund"
+    enabled: true
+    priority: 2
+    url: "https://cleantech-fund.gov/"
+    category: "federal"
+    notes: >
+      Non-repayable contributions for clean technology development.
+      Requires demonstration of environmental benefit.
+
+  # -- Provincial/State --
+
+  - id: regional_innovation
+    name: "Regional Innovation Agency"
+    enabled: true
+    priority: 1
+    url: "https://your-region-innovation.gov/"
+    category: "provincial"
+    notes: >
+      Your region's primary innovation and economic development agency.
+      Multiple streams for SMEs and startups.
+
+  - id: regional_development_bank
+    name: "Regional Development Bank"
+    enabled: true
+    priority: 2
+    url: "https://dev-bank.gov/"
+    category: "provincial"
+    notes: >
+      Regional development bank. Loans, guarantees, equity investments.
+
+  # -- Academic / Collaborative --
+
+  - id: academic_internships
+    name: "Academic Internship Program"
+    enabled: true
+    priority: 1
+    url: "https://academic-internships.org/"
+    category: "academic"
+    notes: >
+      Subsidized hiring of grad students/postdocs for applied R&D.
+      ~50% subsidy on intern costs. Requires university partnership.
+
+  - id: collaborative_research
+    name: "Collaborative Research Grants"
+    enabled: true
+    priority: 2
+    url: "https://research-council.gov/collaborative"
+    category: "academic"
+    notes: >
+      Industry-academic collaborative research grants.
+      Requires matching contribution from company.
+
+  # -- Ecosystem / Accelerator --
+
+  - id: sector_accelerator
+    name: "Sector-Specific Accelerator"
+    enabled: true
+    priority: 2
+    url: "https://your-sector-accelerator.org/"
+    category: "ecosystem"
+    notes: >
+      Accelerator program for your sector. Cohort-based with
+      coaching, mentorship, and investor connections.
+
+defaults:
+  region: "Your Region, Country"
+  eligible_regions:
+    - "Your Region"
+    - "Your Country"
+    - "National"
+
+deduplication:
+  match_fields:
+    - organization
+    - title
+  fuzzy_threshold: 0.85

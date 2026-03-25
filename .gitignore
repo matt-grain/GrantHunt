@@ -20,3 +20,19 @@ jobs.db
 
 # Application artifacts (personal — LOIs, research notes)
 applications/
+
+# Personal data - DO NOT COMMIT
+profile/
+grant_profile.yaml
+grant_sources.yaml
+
+# Claude local settings and memory
+.claude/settings.local.json
+.claude/agent-memory/
+.claude/.anima-setup
+
+# Internal dev docs
+REFACTORING_PLAN.md
+
+# Archives
+*.zip
