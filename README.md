@@ -4,7 +4,7 @@ Grant discovery and application tracking for startups, with **Claude Code skills
 
 This is not just a grant tracker — it's designed to work **with Claude Code** as your grant search co-pilot. The skills in `.claude/skills/` let you say things like `/grant-find "clean tech"` and Claude will search grant sources, score matches, and save prospects for review.
 
-![Screenshot](docs\screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/matt-grain/GrantHunt/refs/heads/master/docs/screenshot.png)
 
 ## Quick Start
 
